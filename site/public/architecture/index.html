@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoopUp — Architecture</title>
+  <meta name="description" content="How LoopUp works under the hood: the durable run model, each stage's real contract, the approval gate, replay, and what verified actually means." />
+  <meta name="theme-color" content="#0b1118" />
+  <link rel="canonical" href="https://loopmachine.coey.dev/architecture" />
+  <meta property="og:title" content="LoopUp — Architecture" />
+  <meta property="og:description" content="The durable run model, per-stage contracts, and honesty guarantees behind LoopUp." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://loopmachine.coey.dev/architecture" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root {
+      --ink: #0b1118; --layer: #111a24; --layer-2: #182431;
+      --text: #f7f9fb; --muted: #9baaba;
+      --orange: #f6821f; --amber: #f7b53b; --blue-light: #71b8d8;
+      --green: #63d5a2; --red: #ff7d68;
+      --border: rgba(174,196,216,.14);
+      --radius-sm: .25rem; --radius-md: .45rem; --radius-lg: .7rem;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--ink); color: var(--text); line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 6rem; }
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace; font-size: .75rem;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+      margin-bottom: .75rem;
+    }
+    .eyebrow::before { content: '['; } .eyebrow::after { content: ']'; }
+    .back { display: inline-block; font-size: .85rem; color: var(--blue-light); text-decoration: none; margin-bottom: 2rem; }
+    .back:hover { text-decoration: underline; }
+    h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -.03em; margin-bottom: .75rem; }
+    .lede { color: var(--muted); font-size: 1.1rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -.02em; margin: 2.5rem 0 .5rem; }
+    h2 .n { font-family: 'IBM Plex Mono', monospace; color: var(--orange); font-size: 1rem; margin-right: .5rem; }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--amber); margin: 1.5rem 0 .5rem; }
+    p { color: var(--muted); margin-bottom: 1rem; }
+    strong { color: var(--text); font-weight: 600; }
+    code { font-family: 'IBM Plex Mono', monospace; font-size: .85em; background: var(--layer-2); padding: .1rem .35rem; border-radius: var(--radius-sm); color: var(--text); }
+    pre { background: var(--layer); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; overflow-x: auto; margin: 1rem 0; font-family: 'IBM Plex Mono', monospace; font-size: .8rem; line-height: 1.55; color: var(--muted); }
+    .claim { background: var(--layer); border-left: 3px solid var(--orange); border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin: 1.5rem 0; color: var(--text); font-size: 1.02rem; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .85rem; }
+    th, td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+    td { color: var(--muted); }
+    td strong, td code { color: var(--text); }
+    .card { background: var(--layer); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem 1.4rem; margin: 1rem 0; }
+    .card.warn { border-color: rgba(247,181,59,.3); }
+    ul { margin: .5rem 0 1rem 1.2rem; color: var(--muted); }
+    li { margin-bottom: .4rem; }
+    .tag { font-family: 'IBM Plex Mono', monospace; font-size: .7rem; padding: .15rem .45rem; border-radius: var(--radius-sm); }
+    .tag.det { background: rgba(99,213,162,.15); color: var(--green); }
+    .tag.state { background: rgba(113,184,216,.15); color: var(--blue-light); }
+    footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+    footer a { color: var(--blue-light); text-decoration: none; }
+    a.inline { color: var(--blue-light); text-decoration: none; }
+    a.inline:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="/">&larr; Back to LoopUp</a>
+    <div class="eyebrow">architecture</div>
+    <h1>What LoopUp actually does</h1>
+    <p class="lede">The technical account: the run model, each stage's real contract, the approval gate, replay, and what "verified" means. Live at <a class="inline" href="https://loopmachine.coey.dev">loopmachine.coey.dev</a>.</p>
+
+    <div class="claim">
+      Five small production services compose into one durable, resumable, human-authorized run that ends in an independently re-checkable result and a newly minted reusable tool — with no service copying another's code.
+    </div>
+
+    <h2><span class="n">01</span>The run is a Durable Object, not a request</h2>
+    <p>A run is not a synchronous HTTP call that dies with the request. <code>POST /api/runs</code> creates a <strong>Durable Object</strong> (<code>LoopupRun</code>) with <strong>SQLite</strong> storage holding the run's identity, its stage table, and every stage's receipt. The DO advances itself with an <strong>alarm-driven stage machine</strong>: each stage runs, writes its result to SQLite, broadcasts to any watchers, then schedules the next stage via <code>storage.setAlarm()</code>. That's why a run survives the request, can be polled or streamed, blocks for human approval, and can be replayed later.</p>
+    <pre>POST /api/runs {goal}
+  -> DO LoopupRun created, SQLite row written, alarm set
+       stage 0  backwards    -> receipt -> alarm
+       stage 1  manyface     -> receipt -> alarm
+       stage 2  temper       -> receipt -> alarm
+       stage 3  deja-shared  -> receipt -> alarm
+       stage 4  airdesk      -> status = awaiting_approval, HALT (no alarm)
+                               [human approves / denies] -> alarm
+       stage 5  approval     -> pass only if status === approved
+       stage 6  mint         -> promote composite -> new tool
+       stage 7  done         -> status = completed</pre>
+
+    <h2><span class="n">02</span>Composition, not absorption</h2>
+    <p>Every stage calls another service's <strong>live HTTP API</strong> with <code>fetch</code>. LoopUp holds adapters and the run engine; it contains none of the five services' internals. If a stage's service is unreachable, that leg is recorded as a real error and marked unproven — the run does not fabricate a result.</p>
+    <table>
+      <thead><tr><th>Stage</th><th>Live service</th><th>What it contributes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>backwards</strong></td><td><code>backwards.coey.dev</code></td><td>Turns the goal into concrete checks; a failed check (verified-disproved) is surfaced honestly, not hidden.</td></tr>
+        <tr><td><strong>manyface</strong></td><td><code>manyface.coey.dev</code></td><td>Races candidate answers; a critic attacks each; returns the winner plus every loser's verdict.</td></tr>
+        <tr><td><strong>temper</strong></td><td><code>temper.coey.dev</code></td><td>Reuses a prior proven tool if one exists for this goal shape; otherwise promotes the winning move into a new one.</td></tr>
+        <tr><td><strong>deja-shared</strong></td><td><code>deja-shared.coey.dev</code></td><td>Injects a prior learned instinct if one exists; records this run's episode (consented, redaction-aware).</td></tr>
+        <tr><td><strong>airdesk</strong></td><td><code>airdesk.coey.dev</code></td><td>Runs the irreversible step to <code>awaiting_signature</code>, then blocks for a human decision.</td></tr>
+      </tbody>
+    </table>
+
+    <h2><span class="n">03</span>The approval gate is a real halt</h2>
+    <p>At the airdesk stage the run sets <code>status = awaiting_approval</code> and <strong>stops scheduling alarms</strong>. Nothing proceeds until a human acts:</p>
+    <ul>
+      <li><code>POST /api/runs/:id/approve</code> — production path, a real WebAuthn passkey signature.</li>
+      <li><code>POST /api/runs/:id/dev-sign</code> — a clearly labeled <strong>non-production demo signer</strong>, for visitors without a passkey.</li>
+      <li><code>POST /api/runs/:id/deny</code> — records denial; the run stays resumable.</li>
+    </ul>
+    <p>Approval binds to the exact artifact hash shown. Send a hash that doesn't match the run's <code>approvalArtifactHash</code> and you get <code>409 approval void</code>. If the underlying result changed, a prior approval is meaningless — you must approve the thing you actually saw.</p>
+
+    <h2><span class="n">04</span>What "verified" means, honestly</h2>
+    <p><code>GET /api/runs/:id?replay=true</code> re-fetches each upstream receipt and recomputes the evidence root. The verdict distinguishes two kinds of leg, because they are not equally re-derivable:</p>
+    <div class="card">
+      <p><span class="tag det">deterministic</span> &nbsp;<strong>backwards, manyface</strong></p>
+      <p style="margin:0;">Same input yields the same receipt. Their stored hash must recompute <strong>exactly</strong>. This is the tamper-evident backbone — if these don't match, something was altered.</p>
+    </div>
+    <div class="card">
+      <p><span class="tag state">stateful</span> &nbsp;<strong>temper mint, deja append, airdesk task</strong></p>
+      <p style="margin:0;">Each call creates a new artifact (a new tool, a new memory entry, a new task), so their hash is <strong>not re-derivable by anyone</strong>. They are verified as <em>recorded from a live call</em>, and the receipt says so plainly rather than faking a match.</p>
+    </div>
+    <p><code>verified: true</code> means every deterministic leg re-verified exactly and every leg actually ran. This is deliberately narrower than "all hashes identical," because claiming a stateful leg is hash-stable would be dishonest.</p>
+
+    <h2><span class="n">05</span>The recursion</h2>
+    <p>After a fully-approved run, LoopUp takes its own composite evidence root and posts it to temper <code>/api/promote</code>, minting a <code>loopup-orchestration</code> tool whose provenance points at the run that proved the whole stack. A tool built by composing tools. The mint is downstream of the evidence root and is deliberately <strong>not</strong> folded back into that root — that would be circular.</p>
+
+    <h2><span class="n">06</span>HTTP contract</h2>
+    <pre>POST /api/runs              {goal}          -> {runId}
+GET  /api/runs/:id                          -> {run: {...stages, status, receipts}}
+GET  /api/runs/:id?replay=true              -> {run, replay: {verified, evidenceRoot, legChecks}}
+GET  /api/runs/:id/ws                       -> WebSocket, streams stage transitions
+POST /api/runs/:id/approve  {artifactHash}  -> 200 | 409 (hash mismatch, void)
+POST /api/runs/:id/dev-sign {artifactHash}  -> 200 {note: demo signer}
+POST /api/runs/:id/deny     {reason?}       -> 200, run resumable
+GET  /api/status                            -> {ok, service, timestamp}</pre>
+    <p>Run status values: <code>running</code>, <code>awaiting_approval</code>, <code>approved</code>, <code>completed</code>, <code>failed</code>, <code>denied</code>.</p>
+
+    <h2><span class="n">07</span>Frontend progress model</h2>
+    <p>The page drives progress by <strong>polling <code>GET /api/runs/:id</code> every 1.5s</strong>, not by WebSocket alone. The backend reaches the approval gate in about 8 seconds — often before a socket finishes handshaking — so polling is the primary driver and the WebSocket is an optional low-latency enhancement.</p>
+
+    <h2><span class="n">08</span>Cloudflare primitives used</h2>
+    <ul>
+      <li><strong>Durable Object + SQLite</strong> — one per run: identity, stage state, receipts, resume, and the WebSocket hub.</li>
+      <li><strong>DO alarms</strong> — the stage machine's clock; each stage schedules the next.</li>
+      <li><strong>Worker fetch</strong> — composition to the five live services; no shared code.</li>
+      <li><strong>Assets binding</strong> — serves this site; the worker owns only <code>/api/*</code> and falls through to assets for everything else.</li>
+    </ul>
+
+    <h2><span class="n">09</span>Honest limits</h2>
+    <div class="card warn">
+      <ul style="margin-bottom:0;">
+        <li>The default approval on the public site uses the <strong>labeled demo signer</strong>, not a real passkey, so a stranger can complete a run. Real WebAuthn is wired and is the production path.</li>
+        <li>Runs are ephemeral demos; the DO holds run state but this is not positioned as durable customer data.</li>
+        <li>Stateful legs cannot be hash-replayed by third parties by design; replay proves the deterministic backbone and that every leg ran, not bit-for-bit reproduction of mint/append/task calls.</li>
+        <li><code>manyface</code> currently races a fixed candidate/critic set; it demonstrates selection-by-test, not an open-ended model tournament.</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>LoopUp calls each tool's live API — it does not copy their code. The airdesk "dev-sign" is a labeled non-production signer.</p>
+      <p style="margin-top:.5rem;"><a href="/">&larr; Back to LoopUp</a></p>
+    </footer>
+  </div>
+</body>
+</html>
