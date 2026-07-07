@@ -71,21 +71,26 @@ approve the thing you actually saw.
 
 ## What "verified" means, honestly
 
-`GET /api/runs/:id?replay=true` re-fetches each upstream receipt and recomputes
-the evidence root. The verdict distinguishes two kinds of leg, because they are
-not equally re-derivable:
+`GET /api/runs/:id?replay=true` re-fetches each **deterministic** upstream receipt
+and recomputes the evidence root. The verdict distinguishes two kinds of leg,
+because they are not equally re-derivable:
 
 - **Deterministic legs** (backwards, manyface): the same input yields the same
-  receipt. Their stored hash must recompute **exactly**. This is the
-  tamper-evident backbone — if these don't match, something was altered.
+  receipt. Replay calls `GET /api/runs/<runId>/receipt` on backwards and
+  `GET /api/replay/<tournamentId>` on manyface, hashes the fresh response, and
+  compares to the stored hash. Verified only if the freshly-fetched upstream
+  receipt matches. This is the tamper-evident backbone — if these don't match,
+  something was altered or the upstream data changed.
 - **Stateful legs** (temper mint, deja append, airdesk task): each call creates a
   new artifact (a new tool, a new memory entry, a new task), so their hash is
   **not re-derivable by anyone**. They are verified as *recorded from a live
   call*, and the receipt says so in plain terms rather than faking a match.
+  Replay does NOT re-fetch upstream for stateful legs.
 
-`verified: true` means every deterministic leg re-verified exactly and every leg
-actually ran. This is deliberately narrower than "all hashes identical," because
-claiming a stateful leg is hash-stable would be dishonest.
+`verified: true` means every deterministic leg re-verified exactly against its
+upstream service and every leg actually ran. This is deliberately narrower than
+"all hashes identical," because claiming a stateful leg is hash-stable would be
+dishonest.
 
 ## The recursion
 

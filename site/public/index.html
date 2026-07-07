@@ -190,11 +190,14 @@
       <summary>How does it know the answer is good? &rsaquo;</summary>
       <div class="afterinner">
         <p class="howlede">Your request passes through five checks before you ever see it. Each is a separate live service you can open and try on its own.</p>
-        <a href="https://backwards.coey.dev">1 &middot; it works out what "done" really means, and flags what's missing</a>
-        <a href="https://manyface.coey.dev">2 &middot; several answers compete; the wrong ones get broken and dropped</a>
-        <a href="https://temper.coey.dev">3 &middot; the answer that survives is saved, so it's faster next time</a>
-        <a href="https://deja.coey.dev">4 &middot; it remembers what it learned for your next request</a>
-        <a href="https://airdesk.coey.dev">5 &middot; it stops and asks you before anything that can't be undone</a>
+        <a href="https://manyface.coey.dev">1 &middot; several answers compete; the wrong ones get broken and dropped</a>
+        <a href="#" id="seeAllServices" style="color:var(--dim);font-size:.78rem;">see all 5 services &rsaquo;</a>
+        <div id="allServices" style="display:none;margin-top:.5rem;">
+          <a href="https://backwards.coey.dev">2 &middot; it works out what "done" really means, and flags what's missing</a>
+          <a href="https://temper.coey.dev">3 &middot; the answer that survives is saved, so it's faster next time</a>
+          <a href="https://deja.coey.dev">4 &middot; it remembers what it learned for your next request</a>
+          <a href="https://airdesk.coey.dev">5 &middot; it stops and asks you before anything that can't be undone</a>
+        </div>
       </div>
     </details>
 
@@ -308,13 +311,27 @@
       if (run.status === 'completed' && !seen['_done']) {
         seen['_done'] = 1;
         log('l-sys', '');
-        log('l-ok', 'run complete — result verified end to end');
-        log('l-sys', 'verified result  <span class="tok">' + esc(run.evidenceRoot || '(pending)') + '</span>');
-        if (run.hammerId) {
-          log('l-new', '');
-          log('l-new', '&#10022; NEW TOOL MINTED: <span class="tok">' + esc(run.hammerId) + '</span>');
-          log('l-dim', '  the machine is now more capable than before this run. run a similar goal and it reuses this.');
-        } else if (run.hammerError) {
+        // ANSWER panel — the plain-language outcome first
+        if (run.resultSummary) {
+          log('l-ok', run.resultSummary.plainSentence);
+          log('l-sys', '');
+          log('l-dim', '  proof: ' + run.resultSummary.backwards.checksCount + ' check(s) passed, ' + run.resultSummary.manyface.failedAttempts + ' attempt(s) rejected, approved by you');
+          if (run.resultSummary.temper.reused) {
+            log('l-dim', '  tool: reused existing tool ' + run.resultSummary.temper.toolId);
+          } else if (run.hammerId) {
+            log('l-dim', '  tool: new tool minted ' + run.hammerId);
+          }
+        } else {
+          log('l-ok', 'run complete — result verified end to end');
+        }
+        // details line — hammer ID and evidence root demoted to small detail
+        var detailParts = [];
+        if (run.evidenceRoot) detailParts.push('evidence: ' + run.evidenceRoot);
+        if (run.hammerId) detailParts.push('hammer: ' + run.hammerId);
+        if (detailParts.length) {
+          log('l-sys', 'details  <span class="l-dim">' + detailParts.join(' &middot; ') + '</span>');
+        }
+        if (run.hammerError) {
           log('l-dim', 'tool not minted: ' + esc(run.hammerError));
         }
         rawToggle.hidden = false;
@@ -434,7 +451,10 @@
         const data = await res.json();
         if (data.replay) {
           data.replay.legChecks.forEach(function (c) {
-            log(c.verified ? 'l-ok' : 'l-dim', '  ' + (c.verified ? '&#10003;' : '&bull;') + ' ' + c.service + '  <span class="l-dim">' + (c.kind || '') + (c.verified ? '' : ' — not hash-replayable by design') + '</span>');
+            var note = '';
+            if (c.note) note = ' <span class="l-dim">' + esc(c.note) + '</span>';
+            else if (!c.verified && c.error) note = ' <span class="l-fail">' + esc(c.error) + '</span>';
+            log(c.verified ? 'l-ok' : 'l-dim', '  ' + (c.verified ? '&#10003;' : '&bull;') + ' ' + c.service + '  <span class="l-dim">' + (c.kind || '') + '</span>' + note);
           });
           log(data.replay.verified ? 'l-ok' : 'l-fail', (data.replay.verified ? '&#10003; independently verified' : '&#10007; verification incomplete') + '  <span class="tok">' + esc(data.replay.evidenceRoot) + '</span>');
         }
@@ -454,6 +474,16 @@
     [].slice.call(document.querySelectorAll('.preset')).forEach(function (p) {
       p.addEventListener('click', function () { input.value = p.getAttribute('data-goal'); input.focus(); });
     });
+
+    var seeAll = document.getElementById('seeAllServices');
+    var allServices = document.getElementById('allServices');
+    if (seeAll && allServices) {
+      seeAll.addEventListener('click', function (e) {
+        e.preventDefault();
+        allServices.style.display = allServices.style.display === 'none' ? 'grid' : 'none';
+        seeAll.textContent = allServices.style.display === 'none' ? 'see all 5 services \u203A' : 'hide \u2039';
+      });
+    }
   </script>
 </body>
 </html>

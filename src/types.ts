@@ -97,6 +97,13 @@ export interface RunState {
   denialReason?: string;
   dejaInstinct?: string | null;
   temperReused?: { id: string; shapeKey: string } | null;
+  resultSummary?: {
+    goal: string;
+    backwards: { status: string; checksCount: number; disprovedCount: number };
+    manyface: { winnerId: string; totalAttempts: number; failedAttempts: number };
+    temper: { reused: boolean; toolId: string };
+    plainSentence: string;
+  } | null;
 }
 
 export interface StageRunner {

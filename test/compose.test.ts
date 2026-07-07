@@ -163,14 +163,16 @@ describe('LoopUp Composition', () => {
   });
 
   test('replay verify recomputes from run state stages', async () => {
+    const backwardsData = { id: 'test-run-bw', status: 'passed', leafResults: [{ claimId: 'c1', outcome: 'verified', summary: 'test' }], hash: 'abc' };
+    const manyfaceData = { tournamentId: 't1', winnerId: 'w1', verdicts: [{ artifactId: 'a1', passed: true, score: 0.95 }] };
     const runState: RunState = {
       id: 'test-run',
       goal: 'test goal',
       status: 'completed',
       currentStage: 8,
       stages: [
-        { name: 'backwards', status: 'passed', hash: contentHash({ test: true }), data: { test: true } },
-        { name: 'manyface', status: 'passed', hash: contentHash({ test2: true }), data: { test2: true } },
+        { name: 'backwards', status: 'passed', hash: contentHash(backwardsData), data: backwardsData },
+        { name: 'manyface', status: 'passed', hash: contentHash(manyfaceData), data: manyfaceData },
         { name: 'temper', status: 'passed', hash: contentHash({ test3: true }), data: { test3: true } },
         { name: 'deja-shared', status: 'passed', hash: contentHash({ test4: true }), data: { test4: true } },
         { name: 'airdesk', status: 'passed', hash: contentHash({ test5: true }), data: { test5: true } },
@@ -193,7 +195,21 @@ describe('LoopUp Composition', () => {
     const ch = compositeHash(stageLegs as LegResult[]);
     runState.compositeHash = ch;
 
+    // Mock fetch to return matching upstream receipts for deterministic legs
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = ((url: string) => {
+      const u = new URL(url);
+      if (u.pathname.includes('/receipt')) {
+        return Promise.resolve(new Response(JSON.stringify(backwardsData), { status: 200 }));
+      }
+      if (u.pathname.includes('/replay/')) {
+        return Promise.resolve(new Response(JSON.stringify(manyfaceData), { status: 200 }));
+      }
+      return Promise.resolve(new Response('not found', { status: 404 }));
+    }) as typeof globalThis.fetch;
+
     const result = await replayVerify(runState);
+    globalThis.fetch = origFetch;
     expect(result.verified).toBe(true);
     expect(result.evidenceRoot).toBeTruthy();
     expect(result.legChecks.length).toBe(5);

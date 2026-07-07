@@ -39,7 +39,8 @@ export class LoopupRun {
       approved_artifact_hash TEXT,
       denial_reason TEXT,
       deja_instinct TEXT,
-      temper_reused TEXT
+      temper_reused TEXT,
+      result_summary TEXT
     )`);
   }
 
@@ -71,6 +72,7 @@ export class LoopupRun {
       denialReason: row.denial_reason ?? undefined,
       dejaInstinct: row.deja_instinct ?? null,
       temperReused: row.temper_reused ? JSON.parse(row.temper_reused) : null,
+      resultSummary: row.result_summary ? JSON.parse(row.result_summary) : null,
     };
   }
 
@@ -80,8 +82,8 @@ export class LoopupRun {
       `INSERT OR REPLACE INTO runs (id, goal, status, current_stage, stages, created_at, updated_at,
         composite_hash, evidence_root, hammer_id, hammer_error,
         approval_artifact_hash, approval_powers, approval_evidence_root,
-        approved_artifact_hash, denial_reason, deja_instinct, temper_reused)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        approved_artifact_hash, denial_reason, deja_instinct, temper_reused, result_summary)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       run.id, run.goal, run.status, run.currentStage, JSON.stringify(run.stages),
       run.createdAt, run.updatedAt,
       run.compositeHash ?? null, run.evidenceRoot ?? null,
@@ -91,6 +93,7 @@ export class LoopupRun {
       run.approvalEvidenceRoot ?? null,
       run.approvedArtifactHash ?? null, run.denialReason ?? null,
       run.dejaInstinct ?? null, run.temperReused ? JSON.stringify(run.temperReused) : null,
+      run.resultSummary ? JSON.stringify(run.resultSummary) : null,
     );
     this.cachedRun = run;
   }
@@ -433,6 +436,49 @@ export class LoopupRun {
         break;
       }
       case 'done': {
+        const backwardsStage = run.stages[0];
+        const manyfaceStage = run.stages[1];
+        const temperStage = run.stages[2];
+
+        const backwardsData = backwardsStage.data as { leafResults?: Array<{ outcome: string }>; status?: string } | null;
+        const manyfaceData = manyfaceStage.data as { winnerId?: string; verdicts?: Array<{ passed: boolean }> } | null;
+        const temperData = temperStage.data as { reused?: boolean; hammer?: { id: string } } | null;
+
+        const checksCount = backwardsData?.leafResults?.length ?? 0;
+        const disprovedCount = backwardsData?.leafResults?.filter(r => r.outcome === 'disproved').length ?? 0;
+        const totalAttempts = manyfaceData?.verdicts?.length ?? 0;
+        const failedAttempts = manyfaceData?.verdicts?.filter(v => !v.passed).length ?? 0;
+        const temperReused = temperData?.reused ?? false;
+        const toolId = run.hammerId ?? temperData?.hammer?.id ?? '';
+
+        let plainSentence: string;
+        if (run.hammerId) {
+          plainSentence = `A verified approach to: "${run.goal}". It passed ${checksCount} check(s); ${failedAttempts} weaker attempt(s) were rejected; approved by you; saved as a reusable tool you can run again.`;
+        } else if (run.hammerError) {
+          plainSentence = `The run completed but no tool was minted: ${run.hammerError}. The goal was "${run.goal}".`;
+        } else {
+          plainSentence = `No answer text was produced; this goal only yields a verified plan for: "${run.goal}".`;
+        }
+
+        run.resultSummary = {
+          goal: run.goal,
+          backwards: {
+            status: backwardsStage.status,
+            checksCount,
+            disprovedCount,
+          },
+          manyface: {
+            winnerId: manyfaceData?.winnerId ?? '',
+            totalAttempts,
+            failedAttempts,
+          },
+          temper: {
+            reused: temperReused,
+            toolId,
+          },
+          plainSentence,
+        };
+
         run.status = 'completed';
         this.saveRun(run);
         this.broadcastState(run);
