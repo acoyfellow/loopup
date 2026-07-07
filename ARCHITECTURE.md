@@ -76,11 +76,16 @@ and recomputes the evidence root. The verdict distinguishes two kinds of leg,
 because they are not equally re-derivable:
 
 - **Deterministic legs** (backwards, manyface): the same input yields the same
-  receipt. Replay calls `GET /api/runs/<runId>/receipt` on backwards and
-  `GET /api/replay/<tournamentId>` on manyface, hashes the fresh response, and
-  compares to the stored hash. Verified only if the freshly-fetched upstream
-  receipt matches. This is the tamper-evident backbone — if these don't match,
-  something was altered or the upstream data changed.
+  receipt.
+  - **backwards**: Replay calls `GET /api/runs/<runId>/receipt`, extracts only the
+    stable fields (`status` + ordered `leafResults` with `{outcome, summary}`),
+    hashes them, and compares to the same stable hash computed from the stored
+    receipt. Volatile fields (timestamps, per-run ids) are ignored. Verified only
+    if the stable content matches.
+  - **manyface**: Replay POSTs the same claim to `POST /api/tournament {claim}`,
+    compares the freshly-computed `winnerId` and the set of `{artifactId, passed}`
+    verdicts to the stored ones. If the winner and pass/fail structure match,
+    the leg is verified.
 - **Stateful legs** (temper mint, deja append, airdesk task): each call creates a
   new artifact (a new tool, a new memory entry, a new task), so their hash is
   **not re-derivable by anyone**. They are verified as *recorded from a live

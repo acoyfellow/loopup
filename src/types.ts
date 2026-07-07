@@ -19,6 +19,11 @@ export interface ManyfaceResult {
   }>;
 }
 
+export interface ManyfaceLegData {
+  claim: string;
+  result: ManyfaceResult;
+}
+
 export interface TemperHammer {
   id: string;
   provenance: {

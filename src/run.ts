@@ -285,9 +285,10 @@ export class LoopupRun {
         break;
       }
       case 'manyface': {
-        const leg = await legManyface(`compose:${run.goal}`);
+        const claim = `compose:${run.goal}`;
+        const leg = await legManyface(claim);
         if (leg.ok) {
-          this.updateStage(run, stageIdx, { status: 'passed', hash: leg.hash, data: leg.data });
+          this.updateStage(run, stageIdx, { status: 'passed', hash: leg.hash, data: { claim, result: leg.data } });
         } else {
           this.updateStage(run, stageIdx, { status: 'failed', error: leg.error });
         }
@@ -308,11 +309,11 @@ export class LoopupRun {
           const manyfaceLeg = run.stages[1];
           if (backwardsLeg.status === 'passed' && manyfaceLeg.status === 'passed') {
             const backwardsData = backwardsLeg.data as { hash?: string } | null;
-            const manyfaceData = manyfaceLeg.data as { winnerId?: string } | null;
+            const manyfaceData = manyfaceLeg.data as { result?: { winnerId?: string } } | null;
             const leg = await legTemperPromote(
               backwardsData?.hash ?? '',
               shapeKey,
-              manyfaceData?.winnerId ?? '',
+              manyfaceData?.result?.winnerId ?? '',
             );
             if (leg.ok) {
               this.updateStage(run, stageIdx, {
@@ -441,13 +442,13 @@ export class LoopupRun {
         const temperStage = run.stages[2];
 
         const backwardsData = backwardsStage.data as { leafResults?: Array<{ outcome: string }>; status?: string } | null;
-        const manyfaceData = manyfaceStage.data as { winnerId?: string; verdicts?: Array<{ passed: boolean }> } | null;
+        const manyfaceData = manyfaceStage.data as { claim?: string; result?: { winnerId?: string; verdicts?: Array<{ passed: boolean }> } } | null;
         const temperData = temperStage.data as { reused?: boolean; hammer?: { id: string } } | null;
 
         const checksCount = backwardsData?.leafResults?.length ?? 0;
         const disprovedCount = backwardsData?.leafResults?.filter(r => r.outcome === 'disproved').length ?? 0;
-        const totalAttempts = manyfaceData?.verdicts?.length ?? 0;
-        const failedAttempts = manyfaceData?.verdicts?.filter(v => !v.passed).length ?? 0;
+        const totalAttempts = manyfaceData?.result?.verdicts?.length ?? 0;
+        const failedAttempts = manyfaceData?.result?.verdicts?.filter(v => !v.passed).length ?? 0;
         const temperReused = temperData?.reused ?? false;
         const toolId = run.hammerId ?? temperData?.hammer?.id ?? '';
 
@@ -468,7 +469,7 @@ export class LoopupRun {
             disprovedCount,
           },
           manyface: {
-            winnerId: manyfaceData?.winnerId ?? '',
+            winnerId: manyfaceData?.result?.winnerId ?? '',
             totalAttempts,
             failedAttempts,
           },

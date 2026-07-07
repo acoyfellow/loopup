@@ -164,7 +164,7 @@ describe('LoopUp Composition', () => {
 
   test('replay verify recomputes from run state stages', async () => {
     const backwardsData = { id: 'test-run-bw', status: 'passed', leafResults: [{ claimId: 'c1', outcome: 'verified', summary: 'test' }], hash: 'abc' };
-    const manyfaceData = { tournamentId: 't1', winnerId: 'w1', verdicts: [{ artifactId: 'a1', passed: true, score: 0.95 }] };
+    const manyfaceData = { claim: 'compose:test goal', result: { tournamentId: 't1', winnerId: 'w1', verdicts: [{ artifactId: 'a1', passed: true, score: 0.95 }] } };
     const runState: RunState = {
       id: 'test-run',
       goal: 'test goal',
@@ -195,15 +195,15 @@ describe('LoopUp Composition', () => {
     const ch = compositeHash(stageLegs as LegResult[]);
     runState.compositeHash = ch;
 
-    // Mock fetch to return matching upstream receipts for deterministic legs
+    // Mock fetch: backwards returns matching receipt, manyface re-runs tournament
     const origFetch = globalThis.fetch;
-    globalThis.fetch = ((url: string) => {
+    globalThis.fetch = ((url: string, init?: RequestInit) => {
       const u = new URL(url);
       if (u.pathname.includes('/receipt')) {
         return Promise.resolve(new Response(JSON.stringify(backwardsData), { status: 200 }));
       }
-      if (u.pathname.includes('/replay/')) {
-        return Promise.resolve(new Response(JSON.stringify(manyfaceData), { status: 200 }));
+      if (u.pathname === '/api/tournament' && init?.method === 'POST') {
+        return Promise.resolve(new Response(JSON.stringify(manyfaceData.result), { status: 200 }));
       }
       return Promise.resolve(new Response('not found', { status: 404 }));
     }) as typeof globalThis.fetch;

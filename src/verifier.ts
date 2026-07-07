@@ -1,4 +1,4 @@
-import type { CompositeReceipt, LegResult, BackwardsReceipt, ManyfaceResult } from './types';
+import type { CompositeReceipt, LegResult, BackwardsReceipt, ManyfaceResult, ManyfaceLegData } from './types';
 import { contentHash, compositeHash } from './hash';
 
 export interface VerificationResult {
@@ -10,6 +10,17 @@ export interface VerificationResult {
 
 const DETERMINISTIC = new Set(['backwards', 'manyface']);
 
+function stableBackwardsHash(receipt: BackwardsReceipt): string {
+  const stable = {
+    status: receipt.status,
+    leafResults: (receipt.leafResults ?? []).map(lr => ({
+      outcome: lr.outcome,
+      summary: lr.summary,
+    })),
+  };
+  return contentHash(stable);
+}
+
 async function fetchUpstreamReceipt(service: string, data: unknown): Promise<{ ok: boolean; hash: string; error?: string }> {
   try {
     if (service === 'backwards') {
@@ -19,21 +30,44 @@ async function fetchUpstreamReceipt(service: string, data: unknown): Promise<{ o
       const res = await fetch(`https://backwards.coey.dev/api/runs/${runId}/receipt`);
       if (!res.ok) return { ok: false, hash: '', error: `upstream HTTP ${res.status}` };
       const receipt = await res.json() as BackwardsReceipt;
-      return { ok: true, hash: contentHash(receipt) };
+      return { ok: true, hash: stableBackwardsHash(receipt) };
     }
     if (service === 'manyface') {
-      const d = data as { tournamentId?: string } | null;
-      const tournamentId = d?.tournamentId;
-      if (!tournamentId) return { ok: false, hash: '', error: 'no tournamentId in stored data' };
-      const res = await fetch(`https://manyface.coey.dev/api/replay/${tournamentId}`);
+      const d = data as ManyfaceLegData | null;
+      if (!d?.claim) return { ok: false, hash: '', error: 'no claim in stored data for re-run' };
+      const res = await fetch('https://manyface.coey.dev/api/tournament', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim: d.claim }),
+      });
       if (!res.ok) return { ok: false, hash: '', error: `upstream HTTP ${res.status}` };
       const result = await res.json() as ManyfaceResult;
-      return { ok: true, hash: contentHash(result) };
+      const stable = {
+        winnerId: result.winnerId,
+        verdicts: (result.verdicts ?? []).map(v => ({ artifactId: v.artifactId, passed: v.passed })),
+      };
+      return { ok: true, hash: contentHash(stable) };
     }
     return { ok: false, hash: '', error: 'unknown deterministic service' };
   } catch (e) {
     return { ok: false, hash: '', error: `upstream fetch failed: ${String(e)}` };
   }
+}
+
+function storedStableHash(service: string, data: unknown): string {
+  if (service === 'backwards') {
+    return stableBackwardsHash(data as BackwardsReceipt);
+  }
+  if (service === 'manyface') {
+    const d = data as ManyfaceLegData;
+    const result = d.result;
+    const stable = {
+      winnerId: result.winnerId,
+      verdicts: (result.verdicts ?? []).map(v => ({ artifactId: v.artifactId, passed: v.passed })),
+    };
+    return contentHash(stable);
+  }
+  return contentHash(data);
 }
 
 export async function verify(receipt: CompositeReceipt): Promise<VerificationResult> {
@@ -110,19 +144,19 @@ export async function replayVerify(runState: import('./types').RunState): Promis
       data: s.data,
     }));
 
-  // For deterministic legs, re-fetch upstream and compare hashes
   const reFetchedLegs: LegResult[] = [];
   for (const leg of stageLegs) {
     if (DETERMINISTIC.has(leg.service) && leg.ok && leg.data != null) {
+      const storedStable = storedStableHash(leg.service, leg.data);
       const upstream = await fetchUpstreamReceipt(leg.service, leg.data);
       if (upstream.ok) {
-        const hashMatches = upstream.hash === leg.hash;
+        const hashMatches = upstream.hash === storedStable;
         reFetchedLegs.push({
           service: leg.service,
           ok: hashMatches,
           hash: leg.hash,
           data: leg.data,
-          error: hashMatches ? undefined : `upstream hash mismatch: stored=${leg.hash}, upstream=${upstream.hash}`,
+          error: hashMatches ? undefined : `upstream stable hash mismatch: stored=${storedStable}, upstream=${upstream.hash}`,
         });
       } else {
         reFetchedLegs.push({
@@ -148,15 +182,20 @@ export async function replayVerify(runState: import('./types').RunState): Promis
 
   const result = await verify(receipt);
 
-  // Update notes for deterministic legs to indicate they were re-fetched
   for (const check of result.legChecks) {
     if (check.kind === 'deterministic') {
       if (check.verified) {
-        check.note = 're-fetched from upstream — receipt matches';
+        if (check.service === 'backwards') {
+          check.note = 're-fetched from upstream; stable claims match';
+        } else if (check.service === 'manyface') {
+          check.note = 're-ran tournament upstream; same winner';
+        } else {
+          check.note = 're-fetched from upstream — receipt matches';
+        }
       } else if (check.error?.includes('upstream HTTP 404')) {
         check.note = 'upstream service has no replay endpoint for this leg; cannot independently verify';
-      } else if (check.error?.includes('upstream hash mismatch')) {
-        check.note = 're-fetched from upstream — upstream data changed since run (e.g. timestamp), hash differs';
+      } else if (check.error?.includes('upstream hash mismatch') || check.error?.includes('upstream stable hash mismatch')) {
+        check.note = 're-fetched from upstream — upstream data changed since run, hash differs';
       } else {
         check.note = 're-fetched from upstream — receipt MISMATCHES: ' + (check.error || 'unknown error');
       }
