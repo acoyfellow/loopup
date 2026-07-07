@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LoopUp — compose five services into one proven artifact</title>
-  <meta name="description" content="State one north star; LoopUp composes five production services into one replayable run that ends in a physically authorized, independently proven artifact." />
+  <title>LoopUp — runs your goal through five live tools</title>
+  <meta name="description" content="Type one goal. LoopUp runs it through five independently deployed services in order, re-checks every step, and gives you one verified result." />
   <meta name="theme-color" content="#0b1118" />
   <link rel="canonical" href="https://loopup.coey.dev" />
-  <meta property="og:title" content="LoopUp — compose five services into one proven artifact" />
-  <meta property="og:description" content="State one north star; LoopUp composes backwards, temper, deja, manyface, and airdesk into one replayable run." />
+  <meta property="og:title" content="LoopUp — runs your goal through five live tools" />
+  <meta property="og:description" content="Type one goal. LoopUp runs it through backwards, temper, deja, manyface, and airdesk in order, re-checks every step, and gives you one verified result." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://loopup.coey.dev" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="LoopUp — compose five services into one proven artifact" />
-  <meta name="twitter:description" content="State one north star; LoopUp composes five production services into one replayable run." />
+  <meta name="twitter:title" content="LoopUp — runs your goal through five live tools" />
+  <meta name="twitter:description" content="Type one goal. LoopUp runs it through five live tools in order, re-checks every step, and gives you one verified result." />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <style>
@@ -142,40 +142,42 @@
 <body>
   <div class="container">
     <div class="eyebrow">loopup v0.0.1</div>
-    <h1>Compose <span>five services</span> into one proven artifact</h1>
-    <p>State one north star. LoopUp runs backwards, manyface, temper, deja, and airdesk in order, records each leg's real response with a content hash, and assembles an independently verifiable composite receipt.</p>
+    <h1>Runs your goal through <span>five live tools</span></h1>
+    <p>Type one goal. LoopUp runs it through five small tools that were each built and deployed separately. Each tool does its part, then loopup re-checks every step by asking each tool to confirm its own result. At the end you get one honest summary: what each tool did, whether it all checks out, and a brand-new reusable tool that was created from the whole run.</p>
 
     <div class="services">
-      <div class="service"><span class="num">01</span><div><div class="name">backwards</div><div class="desc">compile + complete + receipt</div></div></div>
-      <div class="service"><span class="num">02</span><div><div class="name">manyface</div><div class="desc">adversarial tournament on derived claim</div></div></div>
-      <div class="service"><span class="num">03</span><div><div class="name">temper</div><div class="desc">promote winning move into a hammer</div></div></div>
-      <div class="service"><span class="num">04</span><div><div class="name">deja-shared</div><div class="desc">remember consented episode</div></div></div>
-      <div class="service"><span class="num">05</span><div><div class="name">airdesk</div><div class="desc">task + dev-sign + frontier</div></div></div>
+      <div class="service"><span class="num">01</span><div><div class="name">backwards</div><div class="desc">Set a goal, see what "done" means</div></div></div>
+      <div class="service"><span class="num">02</span><div><div class="name">manyface</div><div class="desc">Many answers, only the tested one wins</div></div></div>
+      <div class="service"><span class="num">03</span><div><div class="name">temper</div><div class="desc">Save a solution so it's reused</div></div></div>
+      <div class="service"><span class="num">04</span><div><div class="name">deja-shared</div><div class="desc">Private memory for your AI</div></div></div>
+      <div class="service"><span class="num">05</span><div><div class="name">airdesk</div><div class="desc">Approve the big step with your phone</div></div></div>
     </div>
 
     <div class="runner">
       <input id="northStar" type="text" value="Ship a signed release with a rollback path"
-        placeholder="State one north star…" autocomplete="off" />
-      <button id="runBtn" class="btn" type="button">Run the stack live →</button>
+        placeholder="Type your goal here…" autocomplete="off" />
+      <button id="runBtn" class="btn" type="button">Run the stack live</button>
     </div>
-    <p id="hint" class="hint">Hits five independently deployed Cloudflare Workers in real time, then re-verifies every receipt hash.</p>
+    <p id="hint" class="hint">Each of the five tools is a separate live site. LoopUp calls them in order and double-checks every step.</p>
 
     <div id="out" class="out" hidden>
       <div id="legs" class="leglist"></div>
       <div id="root" class="root"></div>
-      <button id="rawToggle" class="linkbtn" type="button" hidden>show raw receipt</button>
+      <button id="rawToggle" class="linkbtn" type="button" hidden>show the full run record</button>
       <pre id="raw" class="raw" hidden></pre>
     </div>
 
     <div class="links">
-      <a href="https://backwards.coey.dev">backwards</a>
-      <a href="https://manyface.coey.dev">manyface</a>
-      <a href="https://temper.coey.dev">temper</a>
-      <a href="https://airdesk.coey.dev">airdesk</a>
+      <a href="https://backwards.coey.dev">Set a goal, see what "done" means</a>
+      <a href="https://temper.coey.dev">Save a solution so it's reused</a>
+      <a href="https://deja.coey.dev">Private memory for your AI</a>
+      <a href="https://manyface.coey.dev">Many answers, only the tested one wins</a>
+      <a href="https://airdesk.coey.dev">Approve the big step with your phone</a>
     </div>
+    <p style="color:var(--muted);font-size:.8rem;margin-top:.75rem;">Each of these is a separate live site you can open and try.</p>
 
     <footer>
-      <p>Fetch composition only — no copied implementation code. airdesk dev-sign is a labeled non-production signer.</p>
+      <p>LoopUp calls each tool's live API — it does not copy their code. The airdesk "dev-sign" is a labeled non-production signer.</p>
     </footer>
   </div>
 
@@ -194,7 +196,7 @@
         return '<div class="leg pending" data-svc="' + s + '"><span class="st">\u2026</span><span class="svc">' + s + '</span><span class="h">running</span></div>';
       }).join('');
       rootEl.className = 'root';
-      rootEl.innerHTML = '<span class="k">composing five live services\u2026</span>';
+      rootEl.innerHTML = '<span class="k">running your goal through five tools\u2026</span>';
     }
 
     function renderResult(data) {
@@ -209,7 +211,7 @@
         const cls = ok ? 'ok' : 'bad';
         const mark = ok ? '\u2713' : '\u2717';
         const hash = leg.hash ? leg.hash : (leg.error ? String(leg.error).slice(0, 40) : '');
-        const vmark = chk.verified ? ' \u00b7 re-verified' : '';
+        const vmark = chk.verified ? ' \u00b7 step re-checked' : '';
         return '<div class="leg ' + cls + '"><span class="st">' + mark + '</span><span class="svc">' + s + '</span><span class="h">' + hash + vmark + '</span></div>';
       }).join('');
 
@@ -218,9 +220,9 @@
       const root = verification.evidenceRoot || '(none)';
       const hammer = receipt.hammerId ? receipt.hammerId : (receipt.hammerError || 'not minted');
       rootEl.innerHTML =
-        '<div><span class="k">evidence root:</span> <span class="v">' + root + '</span></div>' +
-        '<div><span class="k">independent verification:</span> <span class="badge">' + (pass ? 'VERIFIED' : 'UNPROVEN') + '</span></div>' +
-        '<div><span class="k">minted hammer:</span> <span class="v">' + hammer + '</span>' + (receipt.hammerVerified ? ' \u00b7 verified' : '') + '</div>';
+        '<div><span class="k">verified result:</span> <span class="v">' + root + '</span></div>' +
+        '<div><span class="k">every step re-checked:</span> <span class="badge">' + (pass ? 'yes' : 'no') + '</span></div>' +
+        '<div><span class="k">new reusable tool created:</span> <span class="v">' + hammer + '</span>' + (receipt.hammerVerified ? ' \u00b7 verified' : '') + '</div>';
 
       rawEl.textContent = JSON.stringify(data, null, 2);
       rawToggle.hidden = false;
@@ -228,14 +230,14 @@
 
     rawToggle.addEventListener('click', function () {
       rawEl.hidden = !rawEl.hidden;
-      rawToggle.textContent = rawEl.hidden ? 'show raw receipt' : 'hide raw receipt';
+      rawToggle.textContent = rawEl.hidden ? 'show the full run record' : 'hide the full run record';
     });
 
     async function run() {
       const northStar = input.value.trim();
       if (!northStar) return;
       btn.disabled = true;
-      btn.textContent = 'Composing\u2026';
+      btn.textContent = 'Running\u2026';
       out.hidden = false;
       rawEl.hidden = true;
       rawToggle.hidden = true;
@@ -253,7 +255,7 @@
         rootEl.innerHTML = '<span class="badge">error</span> ' + String(e);
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Run the stack live \u2192';
+        btn.textContent = 'Run the stack live';
       }
     }
 
