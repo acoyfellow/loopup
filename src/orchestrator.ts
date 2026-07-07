@@ -17,9 +17,9 @@ export async function compose(northStar: string, sessionId: string): Promise<Com
   // c) temper — promote winning move into hammer
   let temperLeg: LegResult = { service: 'temper', ok: false, hash: '', data: null, error: 'skipped' };
   if (backwardsLeg.ok && manyfaceLeg.ok) {
-    const backwardsData = backwardsLeg.data as { id: string; hash: string };
+    const backwardsData = backwardsLeg.data as { hash: string };
     const manyfaceData = manyfaceLeg.data as { winnerId: string };
-    temperLeg = await legTemper(backwardsData.id, claim, manyfaceData.winnerId);
+    temperLeg = await legTemper(backwardsData.hash, claim, manyfaceData.winnerId);
   }
   legs.push(temperLeg);
 
@@ -45,19 +45,29 @@ export async function compose(northStar: string, sessionId: string): Promise<Com
     compositeHash: ch,
   };
 
-  // NEW HAMMER: if temper succeeded, promote composite receipt to temper for a loopup-orchestration hammer
-  if (temperLeg.ok) {
-    const temperData = temperLeg.data as { id: string; provenance: { contentHash: string; sourceReceipt: string }; verification: { passed: boolean } };
-    receipt.hammerId = temperData.id;
-    receipt.hammerProvenance = temperData.provenance;
-  } else {
-    // Try to mint a new hammer from the composite receipt
-    const mintLeg = await legTemper(sessionId, `loopup-composite:${northStar}`, ch);
-    if (mintLeg.ok) {
-      const mintData = mintLeg.data as { id: string; provenance: { contentHash: string; sourceReceipt: string } };
-      receipt.hammerId = mintData.id;
-      receipt.hammerProvenance = mintData.provenance;
+  // THE RECURSION: mint a distinct loopup-orchestration hammer FROM the composite
+  // evidence root (receiptId = compositeHash), only when every leg verified. This
+  // is a hammer built by composing hammers — its provenance points at the run that
+  // proved the whole stack, not at any single upstream move.
+  const allLegsOk = legs.every((l) => l.ok);
+  if (allLegsOk) {
+    // The mint is DOWNSTREAM of the evidence root — it consumes the composite
+    // hash as its receiptId and is recorded on the receipt, but is deliberately
+    // NOT folded back into `legs`/compositeHash (that would be circular).
+    const mintLeg = await legTemper(ch, `loopup-orchestration:${northStar}`, `composite-${ch}`);
+    const mint = mintLeg.data as {
+      hammer?: { id: string; provenance: { contentHash: string; sourceReceipt: string } };
+      verification?: { passed: boolean };
+    } | null;
+    if (mintLeg.ok && mint?.hammer) {
+      receipt.hammerId = mint.hammer.id;
+      receipt.hammerProvenance = mint.hammer.provenance;
+      receipt.hammerVerified = mint.verification?.passed ?? false;
+    } else {
+      receipt.hammerError = mintLeg.error ?? 'temper returned no hammer';
     }
+  } else {
+    receipt.hammerError = 'not minted: one or more composition legs did not verify';
   }
 
   return receipt;

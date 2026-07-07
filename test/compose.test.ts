@@ -16,9 +16,13 @@ const mockManyfaceData = {
   verdicts: [{ artifactId: 'a1', passed: true, score: 0.95 }],
 };
 
+// Matches the REAL temper /api/promote contract: nested under `hammer`.
 const mockTemperData = {
-  id: 'hammer-1',
-  provenance: { contentHash: 'ch1', sourceReceipt: 'sr1' },
+  ok: true,
+  hammer: {
+    id: 'hammer-1',
+    provenance: { contentHash: 'ch1', sourceReceipt: 'sr1' },
+  },
   verification: { passed: true },
 };
 

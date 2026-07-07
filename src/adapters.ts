@@ -10,13 +10,19 @@ const AIRDESK = 'https://airdesk.coey.dev';
 const AIRDESK_POLL_INTERVAL = 500;
 const AIRDESK_MAX_POLLS = 30;
 
-async function fetchJson<T>(url: string, body: unknown): Promise<{ ok: boolean; data: T; error?: string }> {
+async function fetchJson<T>(
+  url: string,
+  body?: unknown,
+  opts?: { method?: 'GET' | 'POST'; headers?: Record<string, string> },
+): Promise<{ ok: boolean; data: T; error?: string }> {
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const method = opts?.method ?? (body === undefined ? 'GET' : 'POST');
+    const init: RequestInit = {
+      method,
+      headers: { ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}), ...(opts?.headers ?? {}) },
+    };
+    if (method === 'POST') init.body = JSON.stringify(body ?? {});
+    const res = await fetch(url, init);
     if (!res.ok) {
       const text = await res.text();
       return { ok: false, data: null as unknown as T, error: `HTTP ${res.status}: ${text.slice(0, 200)}` };
@@ -33,10 +39,10 @@ export async function legBackwards(northStar: string): Promise<LegResult> {
   if (!compile.ok) return { service: 'backwards', ok: false, hash: '', data: null, error: compile.error };
 
   const runId = compile.data.id;
-  const complete = await fetchJson<{ id: string }>(`${BACKWARDS}/api/runs/${runId}/complete`, {});
+  const complete = await fetchJson<{ id: string }>(`${BACKWARDS}/api/runs/${runId}/complete`, {}, { method: 'POST' });
   if (!complete.ok) return { service: 'backwards', ok: false, hash: '', data: null, error: complete.error };
 
-  const receipt = await fetchJson<BackwardsReceipt>(`${BACKWARDS}/api/runs/${runId}/receipt`, {});
+  const receipt = await fetchJson<BackwardsReceipt>(`${BACKWARDS}/api/runs/${runId}/receipt`);
   if (!receipt.ok) return { service: 'backwards', ok: false, hash: '', data: null, error: receipt.error };
 
   const hash = contentHash(receipt.data);
@@ -67,12 +73,11 @@ export async function legTemper(receiptId: string, claim: string, winnerId: stri
 }
 
 export async function legDejaRemember(slipId: string, text: string, sessionId: string): Promise<LegResult> {
-  const result = await fetchJson<DejaEvent>(`${DEJA_SHARED}/v1/shared/remember`, {
-    slipId,
-    text,
-    authoredBy: 'loopup',
-    sessionId,
-  });
+  const result = await fetchJson<DejaEvent>(
+    `${DEJA_SHARED}/v1/shared/remember`,
+    { slipId, text, authoredBy: 'loopup', sessionId },
+    { headers: { 'x-deja-authority': 'loopup-demo' } },
+  );
   if (!result.ok) return { service: 'deja-shared', ok: false, hash: '', data: null, error: result.error };
 
   const hash = contentHash(result.data);
@@ -89,7 +94,7 @@ export async function legAirdesk(northStar: string): Promise<LegResult> {
   const workflowId = task.data.workflowId;
   let frontier: AirdeskResult | null = null;
   for (let i = 0; i < AIRDESK_MAX_POLLS; i++) {
-    const f = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`, {});
+    const f = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`);
     if (f.ok && f.data.status === 'awaiting_signature') {
       frontier = f.data;
       break;
@@ -105,7 +110,7 @@ export async function legAirdesk(northStar: string): Promise<LegResult> {
   });
   if (!sign.ok) return { service: 'airdesk', ok: false, hash: '', data: null, error: sign.error };
 
-  const finalFrontier = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`, {});
+  const finalFrontier = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`);
   if (!finalFrontier.ok) return { service: 'airdesk', ok: false, hash: '', data: null, error: finalFrontier.error };
 
   const enrichedData = { ...finalFrontier.data, signedStatus: sign.data.status };

@@ -62,4 +62,6 @@ export interface CompositeReceipt {
     contentHash: string;
     sourceReceipt: string;
   };
+  hammerVerified?: boolean;
+  hammerError?: string;
 }
