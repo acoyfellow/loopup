@@ -1,0 +1,10 @@
+{
+  "name": "LoopUp",
+  "short_name": "LoopUp",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1118",
+  "theme_color": "#0b1118",
+  "description": "Compose five services into one proven artifact",
+  "icons": []
+}

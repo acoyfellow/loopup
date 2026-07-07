@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoopUp — compose five services into one proven artifact</title>
+  <meta name="description" content="State one north star; LoopUp composes five production services into one replayable run that ends in a physically authorized, independently proven artifact." />
+  <meta name="theme-color" content="#0b1118" />
+  <link rel="canonical" href="https://loopup.coey.dev" />
+  <meta property="og:title" content="LoopUp — compose five services into one proven artifact" />
+  <meta property="og:description" content="State one north star; LoopUp composes backwards, temper, deja, manyface, and airdesk into one replayable run." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://loopup.coey.dev" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="LoopUp — compose five services into one proven artifact" />
+  <meta name="twitter:description" content="State one north star; LoopUp composes five production services into one replayable run." />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root {
+      --ink: #0b1118;
+      --layer: #111a24;
+      --layer-2: #182431;
+      --text: #f7f9fb;
+      --muted: #9baaba;
+      --orange: #f6821f;
+      --amber: #f7b53b;
+      --blue-light: #71b8d8;
+      --green: #63d5a2;
+      --red: #ff7d68;
+      --border: rgba(174,196,216,.14);
+      --radius-sm: .25rem;
+      --radius-md: .45rem;
+      --radius-lg: .7rem;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--ink);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .75rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+    .eyebrow::before { content: '['; }
+    .eyebrow::after { content: ']'; }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      margin-bottom: 1rem;
+    }
+    h1 span { color: var(--orange); }
+    p { color: var(--muted); margin-bottom: 1.5rem; font-size: 1.05rem; }
+    .services {
+      display: grid;
+      gap: .5rem;
+      margin-bottom: 2rem;
+    }
+    .service {
+      background: var(--layer);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .service .num {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--orange);
+      font-size: .8rem;
+      min-width: 1.5rem;
+    }
+    .service .name { font-weight: 600; }
+    .service .desc { color: var(--muted); font-size: .875rem; }
+    .code {
+      background: var(--layer);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .875rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+    .code .prompt { color: var(--green); }
+    .code .comment { color: var(--muted); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: var(--orange);
+      color: var(--ink);
+      font-weight: 700;
+      padding: .6rem 1.2rem;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-size: .9rem;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .links { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+    .links a { color: var(--blue-light); text-decoration: none; font-size: .875rem; }
+    .links a:hover { text-decoration: underline; }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="eyebrow">loopup v0.0.1</div>
+    <h1>Compose <span>five services</span> into one proven artifact</h1>
+    <p>State one north star. LoopUp runs backwards, manyface, temper, deja, and airdesk in order, records each leg's real response with a content hash, and assembles an independently verifiable composite receipt.</p>
+
+    <div class="services">
+      <div class="service"><span class="num">01</span><div><div class="name">backwards</div><div class="desc">compile + complete + receipt</div></div></div>
+      <div class="service"><span class="num">02</span><div><div class="name">manyface</div><div class="desc">adversarial tournament on derived claim</div></div></div>
+      <div class="service"><span class="num">03</span><div><div class="name">temper</div><div class="desc">promote winning move into a hammer</div></div></div>
+      <div class="service"><span class="num">04</span><div><div class="name">deja-shared</div><div class="desc">remember consented episode</div></div></div>
+      <div class="service"><span class="num">05</span><div><div class="name">airdesk</div><div class="desc">task + dev-sign + frontier</div></div></div>
+    </div>
+
+    <div class="code">
+      <span class="prompt">$</span> bun run demo<br/>
+      <span class="comment">// Composite receipt written to proof/loopup-receipt.json</span>
+    </div>
+
+    <a class="btn" href="https://github.com/jcoeyman/loopup">View on GitHub</a>
+
+    <div class="links">
+      <a href="https://backwards.coey.dev">backwards</a>
+      <a href="https://manyface.coey.dev">manyface</a>
+      <a href="https://temper.coey.dev">temper</a>
+      <a href="https://airdesk.coey.dev">airdesk</a>
+    </div>
+
+    <footer>
+      <p>Fetch composition only — no copied implementation code. airdesk dev-sign is a labeled non-production signer.</p>
+    </footer>
+  </div>
+</body>
+</html>

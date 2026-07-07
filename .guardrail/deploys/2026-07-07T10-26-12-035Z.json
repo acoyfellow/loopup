@@ -1,0 +1,29 @@
+{
+  "schema": "guardrail.deploy-receipt.v0",
+  "timestamp": "2026-07-07T10:26:12.035Z",
+  "command": [
+    "wrangler",
+    "deploy",
+    "--dry-run"
+  ],
+  "configPath": "/Users/jcoeyman/cloudflare/loopup/wrangler.toml",
+  "decision": {
+    "allowed": true,
+    "findings": []
+  },
+  "exposure": {
+    "isPublic": true,
+    "surface": "workers.dev URL",
+    "reason": "workers_dev not set (defaults to true)",
+    "criticalMessage": "workers_dev not set (defaults to true) — Worker will be public with sensitive bindings",
+    "routes": [],
+    "workersDev": true
+  },
+  "bindings": [],
+  "auth": {
+    "detected": false,
+    "partial": false,
+    "patterns": [],
+    "source": "/Users/jcoeyman/cloudflare/loopup/src/worker.ts"
+  }
+}
