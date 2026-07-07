@@ -218,7 +218,7 @@
           <button id="devSignBtn" class="btn btn-secondary" type="button">Demo signer (not production)</button>
           <button id="denyBtn" class="btn btn-danger" type="button">Deny</button>
         </div>
-        <p class="note">Approval binds to the exact artifact hash shown. If the artifact changed, approval is void.</p>
+        <p class="note">Your approval is locked to the exact result shown. If the result changed, the approval no longer counts.</p>
       </div>
       <div id="root" class="root"></div>
       <div id="replaySection" class="replay-link" hidden></div>
@@ -281,7 +281,7 @@
       const root = run.evidenceRoot || '(pending)';
       const hammer = run.hammerId ? run.hammerId : (run.hammerError || 'not minted');
       rootEl.innerHTML =
-        '<div><span class="k">evidence root:</span> <span class="v">' + root + '</span></div>' +
+        '<div><span class="k">verified result:</span> <span class="v">' + root + '</span></div>' +
         '<div><span class="k">status:</span> <span class="badge">' + run.status + '</span></div>' +
         '<div><span class="k">new reusable tool:</span> <span class="v">' + hammer + '</span></div>';
     }
@@ -295,9 +295,9 @@
       approvalGate.hidden = false;
       approvalDetail.innerHTML =
         '<div>Goal: <span>' + run.goal + '</span></div>' +
-        '<div>Artifact hash: <span>' + (run.approvalArtifactHash || 'unknown') + '</span></div>' +
+        '<div>Result fingerprint: <span>' + (run.approvalArtifactHash || 'unknown') + '</span></div>' +
         '<div>Powers: <span>' + (run.approvalPowers ? run.approvalPowers.join(', ') : 'none') + '</span></div>' +
-        '<div>Evidence root: <span>' + (run.approvalEvidenceRoot || 'pending') + '</span></div>';
+        '<div>Verified result: <span>' + (run.approvalEvidenceRoot || 'pending') + '</span></div>';
     }
 
     function showInstinct(run) {
@@ -459,7 +459,7 @@
         if (data.replay) {
           var replayHtml = '<div class="root ' + (data.replay.verified ? 'pass' : 'fail') + '">' +
             '<div><span class="k">replay verification:</span> <span class="badge">' + (data.replay.verified ? 'PASS' : 'FAIL') + '</span></div>' +
-            '<div><span class="k">evidence root:</span> <span class="v">' + data.replay.evidenceRoot + '</span></div>';
+            '<div><span class="k">verified result:</span> <span class="v">' + data.replay.evidenceRoot + '</span></div>';
           data.replay.legChecks.forEach(function (c) {
             replayHtml += '<div><span class="k">' + c.service + ':</span> ' + (c.verified ? '\u2713' : '\u2717') + ' ' + c.reportedHash.slice(0, 12) + '</div>';
           });
