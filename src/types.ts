@@ -65,3 +65,47 @@ export interface CompositeReceipt {
   hammerVerified?: boolean;
   hammerError?: string;
 }
+
+export type StageName = 'backwards' | 'manyface' | 'temper' | 'deja-shared' | 'airdesk' | 'approval' | 'mint' | 'done';
+
+export type StageStatus = 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+
+export interface StageState {
+  name: StageName;
+  status: StageStatus;
+  hash?: string;
+  error?: string;
+  data?: unknown;
+}
+
+export interface RunState {
+  id: string;
+  goal: string;
+  status: 'created' | 'running' | 'awaiting_approval' | 'approved' | 'denied' | 'completed' | 'failed';
+  currentStage: number;
+  stages: StageState[];
+  createdAt: string;
+  updatedAt: string;
+  compositeHash?: string;
+  evidenceRoot?: string;
+  hammerId?: string;
+  hammerError?: string;
+  approvalArtifactHash?: string;
+  approvalPowers?: string[];
+  approvalEvidenceRoot?: string;
+  approvedArtifactHash?: string;
+  denialReason?: string;
+  dejaInstinct?: string | null;
+  temperReused?: { id: string; shapeKey: string } | null;
+}
+
+export interface StageRunner {
+  name: StageName;
+  run: (goal: string, state: RunState) => Promise<StageState>;
+}
+
+export interface Env {
+  ASSETS: { fetch: (req: Request) => Promise<Response> };
+  LOOPUP_RUN: any;
+  DEJA_AUTHORITY?: string;
+}

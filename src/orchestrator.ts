@@ -1,38 +1,45 @@
 import type { CompositeReceipt, LegResult } from './types';
 import { compositeHash } from './hash';
-import { legBackwards, legManyface, legTemper, legDejaRemember, legAirdesk } from './adapters';
+import { legBackwards, legManyface, legTemperPromote, legDejaRemember, legAirdeskCreateTask, legAirdeskPoll, legAirdeskSign } from './adapters';
 
 export async function compose(northStar: string, sessionId: string): Promise<CompositeReceipt> {
   const legs: LegResult[] = [];
 
-  // a) backwards
   const backwardsLeg = await legBackwards(northStar);
   legs.push(backwardsLeg);
 
-  // b) manyface — derive claim from northStar
   const claim = `compose:${northStar}`;
   const manyfaceLeg = await legManyface(claim);
   legs.push(manyfaceLeg);
 
-  // c) temper — promote winning move into hammer
   let temperLeg: LegResult = { service: 'temper', ok: false, hash: '', data: null, error: 'skipped' };
   if (backwardsLeg.ok && manyfaceLeg.ok) {
     const backwardsData = backwardsLeg.data as { hash: string };
     const manyfaceData = manyfaceLeg.data as { winnerId: string };
-    temperLeg = await legTemper(backwardsData.hash, claim, manyfaceData.winnerId);
+    temperLeg = await legTemperPromote(backwardsData.hash, claim, manyfaceData.winnerId);
   }
   legs.push(temperLeg);
 
-  // d) deja-shared remember episode
   const dejaLeg = await legDejaRemember(
     `loopup-${sessionId}`,
     `LoopUp composition: northStar=${northStar}, backwards=${backwardsLeg.ok}, manyface=${manyfaceLeg.ok}, temper=${temperLeg.ok}`,
     sessionId,
+    'loopup-demo',
   );
   legs.push(dejaLeg);
 
-  // e) airdesk task + dev-sign
-  const airdeskLeg = await legAirdesk(northStar);
+  const task = await legAirdeskCreateTask(northStar);
+  let airdeskLeg: LegResult;
+  if ('error' in task) {
+    airdeskLeg = { service: 'airdesk', ok: false, hash: '', data: null, error: task.error };
+  } else {
+    const pollResult = await legAirdeskPoll(task.workflowId);
+    if (!pollResult.ok) {
+      airdeskLeg = pollResult;
+    } else {
+      airdeskLeg = await legAirdeskSign(task.workflowId);
+    }
+  }
   legs.push(airdeskLeg);
 
   const ch = compositeHash(legs);
@@ -45,16 +52,9 @@ export async function compose(northStar: string, sessionId: string): Promise<Com
     compositeHash: ch,
   };
 
-  // THE RECURSION: mint a distinct loopup-orchestration hammer FROM the composite
-  // evidence root (receiptId = compositeHash), only when every leg verified. This
-  // is a hammer built by composing hammers — its provenance points at the run that
-  // proved the whole stack, not at any single upstream move.
   const allLegsOk = legs.every((l) => l.ok);
   if (allLegsOk) {
-    // The mint is DOWNSTREAM of the evidence root — it consumes the composite
-    // hash as its receiptId and is recorded on the receipt, but is deliberately
-    // NOT folded back into `legs`/compositeHash (that would be circular).
-    const mintLeg = await legTemper(ch, `loopup-orchestration:${northStar}`, `composite-${ch}`);
+    const mintLeg = await legTemperPromote(ch, `loopup-orchestration:${northStar}`, `composite-${ch}`);
     const mint = mintLeg.data as {
       hammer?: { id: string; provenance: { contentHash: string; sourceReceipt: string } };
       verification?: { passed: boolean };

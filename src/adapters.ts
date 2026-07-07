@@ -1,4 +1,7 @@
-import type { BackwardsReceipt, ManyfaceResult, TemperHammer, DejaEvent, AirdeskResult, LegResult } from './types';
+import type {
+  BackwardsReceipt, ManyfaceResult, TemperHammer, DejaEvent, AirdeskResult,
+  LegResult, RunState,
+} from './types';
 import { contentHash } from './hash';
 
 const BACKWARDS = 'https://backwards.coey.dev';
@@ -57,7 +60,21 @@ export async function legManyface(claim: string): Promise<LegResult> {
   return { service: 'manyface', ok: true, hash, data: result.data };
 }
 
-export async function legTemper(receiptId: string, claim: string, winnerId: string): Promise<LegResult> {
+export async function legTemperLookup(shapeKey: string): Promise<{ id: string; shapeKey: string } | null> {
+  const result = await fetchJson<Array<{ id: string; shapeKey: string }>>(
+    `${TEMPER}/api/hammers/${shapeKey}`,
+    undefined,
+    { method: 'GET' },
+  );
+  if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
+    return result.data[0];
+  }
+  return null;
+}
+
+export async function legTemperPromote(
+  receiptId: string, claim: string, winnerId: string,
+): Promise<LegResult> {
   const result = await fetchJson<TemperHammer>(`${TEMPER}/api/promote`, {
     receiptId,
     claim,
@@ -72,11 +89,23 @@ export async function legTemper(receiptId: string, claim: string, winnerId: stri
   return { service: 'temper', ok: true, hash, data: result.data };
 }
 
-export async function legDejaRemember(slipId: string, text: string, sessionId: string): Promise<LegResult> {
+export async function legDejaLookupEvents(goal: string, authority: string): Promise<{ events: unknown[] }> {
+  const result = await fetchJson<{ events: unknown[] }>(
+    `${DEJA_SHARED}/v1/shared/events?goal=${encodeURIComponent(goal)}`,
+    undefined,
+    { method: 'GET', headers: { 'x-deja-authority': authority } },
+  );
+  if (result.ok) return { events: result.data.events ?? [] };
+  return { events: [] };
+}
+
+export async function legDejaRemember(
+  slipId: string, text: string, sessionId: string, authority: string,
+): Promise<LegResult> {
   const result = await fetchJson<DejaEvent>(
     `${DEJA_SHARED}/v1/shared/remember`,
     { slipId, text, authoredBy: 'loopup', sessionId },
-    { headers: { 'x-deja-authority': 'loopup-demo' } },
+    { headers: { 'x-deja-authority': authority } },
   );
   if (!result.ok) return { service: 'deja-shared', ok: false, hash: '', data: null, error: result.error };
 
@@ -84,14 +113,16 @@ export async function legDejaRemember(slipId: string, text: string, sessionId: s
   return { service: 'deja-shared', ok: true, hash, data: result.data };
 }
 
-export async function legAirdesk(northStar: string): Promise<LegResult> {
+export async function legAirdeskCreateTask(northStar: string): Promise<{ workflowId: string } | { ok: false; error: string }> {
   const task = await fetchJson<{ workflowId: string }>(`${AIRDESK}/api/task`, {
     northStar,
     powers: ['compose', 'publish'],
   });
-  if (!task.ok) return { service: 'airdesk', ok: false, hash: '', data: null, error: task.error };
+  if (!task.ok) return { ok: false, error: task.error! };
+  return task.data;
+}
 
-  const workflowId = task.data.workflowId;
+export async function legAirdeskPoll(workflowId: string): Promise<LegResult> {
   let frontier: AirdeskResult | null = null;
   for (let i = 0; i < AIRDESK_MAX_POLLS; i++) {
     const f = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`);
@@ -104,10 +135,26 @@ export async function legAirdesk(northStar: string): Promise<LegResult> {
   }
   if (!frontier) return { service: 'airdesk', ok: false, hash: '', data: null, error: 'timed out waiting for awaiting_signature' };
 
+  return { service: 'airdesk', ok: true, hash: contentHash(frontier), data: frontier };
+}
+
+export async function legAirdeskSign(workflowId: string): Promise<LegResult> {
   const sign = await fetchJson<{ status: string }>(`${AIRDESK}/api/dev-sign/${workflowId}`, {
     signature: 'loopup-demo-dev-signature',
     signer: 'loopup-demo-dev',
   });
+  if (!sign.ok) return { service: 'airdesk', ok: false, hash: '', data: null, error: sign.error };
+
+  const finalFrontier = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`);
+  if (!finalFrontier.ok) return { service: 'airdesk', ok: false, hash: '', data: null, error: finalFrontier.error };
+
+  const enrichedData = { ...finalFrontier.data, signedStatus: sign.data.status };
+  const hash = contentHash(enrichedData);
+  return { service: 'airdesk', ok: true, hash, data: enrichedData };
+}
+
+export async function legAirdeskRealSign(workflowId: string): Promise<LegResult> {
+  const sign = await fetchJson<{ status: string }>(`${AIRDESK}/api/sign/${workflowId}`);
   if (!sign.ok) return { service: 'airdesk', ok: false, hash: '', data: null, error: sign.error };
 
   const finalFrontier = await fetchJson<AirdeskResult>(`${AIRDESK}/api/frontier/task-${workflowId}`);

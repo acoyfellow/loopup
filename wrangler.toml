@@ -10,6 +10,14 @@ directory = "./site/public"
 binding = "ASSETS"
 html_handling = "auto-trailing-slash"
 
+[[durable_objects.bindings]]
+name = "LOOPUP_RUN"
+class_name = "LoopupRun"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LoopupRun"]
+
 [[routes]]
 pattern = "loopup.coey.dev"
 custom_domain = true
