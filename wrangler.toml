@@ -1,4 +1,4 @@
-name = "loopup"
+name = "loopmachine"
 main = "src/worker.ts"
 compatibility_date = "2026-07-07"
 compatibility_flags = ["nodejs_compat"]
@@ -19,5 +19,5 @@ tag = "v1"
 new_sqlite_classes = ["LoopupRun"]
 
 [[routes]]
-pattern = "loopup.coey.dev"
+pattern = "loopmachine.coey.dev"
 custom_domain = true
