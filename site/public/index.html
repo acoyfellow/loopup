@@ -343,23 +343,49 @@
       rawToggle.hidden = false;
     }
 
+    var pollTimer = null;
+
+    function stopPolling() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    // Polling is the primary progress driver: the backend reaches the approval
+    // gate in ~8s, sometimes before a WebSocket even finishes handshaking, so we
+    // never rely on the socket alone. WS is an optional low-latency enhancement.
+    function startPolling(runId) {
+      stopPolling();
+      var poll = async function () {
+        try {
+          const res = await fetch('/api/runs/' + runId);
+          if (!res.ok) return;
+          const body = await res.json();
+          const run = body.run || body;
+          handleState(run);
+          if (['awaiting_approval', 'completed', 'failed', 'denied'].indexOf(run.status) !== -1) {
+            stopPolling();
+          }
+        } catch (e) { /* keep polling */ }
+      };
+      poll();
+      pollTimer = setInterval(poll, 1500);
+    }
+
     function connectWebSocket(runId) {
       if (ws) { ws.close(); }
-      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = protocol + '//' + location.host + '/api/runs/' + runId + '/ws';
-      ws = new WebSocket(wsUrl);
-      ws.onmessage = function (event) {
-        var msg = JSON.parse(event.data);
-        if (msg.type === 'state') {
-          handleState(msg.run);
-        }
-      };
-      ws.onclose = function () {
-        ws = null;
-      };
-      ws.onerror = function () {
-        ws = null;
-      };
+      startPolling(runId);
+      try {
+        const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = protocol + '//' + location.host + '/api/runs/' + runId + '/ws';
+        ws = new WebSocket(wsUrl);
+        ws.onmessage = function (event) {
+          var msg = JSON.parse(event.data);
+          if (msg.type === 'state') {
+            handleState(msg.run);
+          }
+        };
+        ws.onclose = function () { ws = null; };
+        ws.onerror = function () { ws = null; };
+      } catch (e) { ws = null; }
     }
 
     async function createRun() {
@@ -412,6 +438,8 @@
         if (!res.ok) {
           rootEl.className = 'root fail';
           rootEl.innerHTML = '<span class="badge">approval void</span> ' + (data.error || 'unknown error');
+        } else {
+          startPolling(currentRunId);
         }
       } catch (e) {
         rootEl.className = 'root fail';
@@ -431,6 +459,8 @@
         if (!res.ok) {
           rootEl.className = 'root fail';
           rootEl.innerHTML = '<span class="badge">approval void</span> ' + (data.error || 'unknown error');
+        } else {
+          startPolling(currentRunId);
         }
       } catch (e) {
         rootEl.className = 'root fail';
@@ -446,6 +476,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ reason: 'denied by user' }),
         });
+        startPolling(currentRunId);
       } catch (e) {
         rootEl.className = 'root fail';
         rootEl.innerHTML = '<span class="badge">error</span> ' + String(e);
