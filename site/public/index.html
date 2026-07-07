@@ -116,6 +116,11 @@
     .after { margin-top: 2rem; display: grid; gap: .35rem; }
     .after a { color: var(--blue); text-decoration: none; font-size: .78rem; }
     .after a:hover { text-decoration: underline; }
+    .howblock { border:1px solid var(--border); border-radius:var(--radius); padding:.6rem .9rem; margin-top:2rem; }
+    .howblock summary { cursor:pointer; color:var(--muted); font-size:.82rem; }
+    .howblock summary:hover { color:var(--text); }
+    .afterinner { margin-top:.8rem; display:grid; gap:.35rem; }
+    .howlede { color:var(--dim); font-size:.78rem; margin-bottom:.4rem; }
     .after .lbl { font-size: .7rem; color: var(--dim); text-transform: uppercase; letter-spacing: .1em; margin: .8rem 0 .2rem; }
     footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--border); font-size: .74rem; color: var(--dim); }
     footer a { color: var(--blue); text-decoration: none; }
@@ -125,16 +130,16 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="brand"><b>loopup</b> // a machine that builds its own tools</div>
-    <h1>Give it a goal.<br>It proves the work, then <span class="hl">builds a new tool</span> from the result.</h1>
-    <p class="thesis">You hand the machine one goal. It works out what "done" really means, races several attempts, keeps only the one that survives real tests, and stops for your sign-off before anything irreversible. <b>Then it saves the proven result as a reusable tool</b> — so the next goal starts further ahead than the last.</p>
+    <div class="brand"><b>loopup</b> // AI work you don't have to double-check</div>
+    <h1>Ask for something.<br>Get back an answer you can <span class="hl">actually trust</span>.</h1>
+    <p class="thesis">A normal AI hands you one confident answer and hopes it's right. LoopUp hands you an answer that <b>already survived real tests</b> — the wrong tries thrown out, the missing pieces flagged, and a stop-and-ask before anything that can't be undone. You get the result <b>and the proof</b>, without babysitting it.</p>
 
     <div class="compound">
-      <span class="chip">goal</span>
+      <span class="chip">you ask</span>
       <span class="plus">&rarr;</span>
-      <span class="chip">5 proven tools compose</span>
+      <span class="chip">it proves the work</span>
       <span class="eq">=</span>
-      <span class="chip new">+1 new tool, every run</span>
+      <span class="chip new">an answer you can rely on</span>
     </div>
 
     <div class="term">
@@ -150,18 +155,18 @@
         </div>
 
         <div class="presets" id="presets">
-          <div class="lbl">or pick one</div>
+          <div class="lbl">try one — see what you get back</div>
           <button class="preset" type="button" data-goal="Sort a list of customer records by signup date, newest first">
-            <span class="c">&gt;</span> <span class="g">Solve a coding problem the right way</span>
-            <span class="why">several attempts compete, a critic breaks the weak ones, only the tested answer survives</span>
+            <span class="c">&gt;</span> <span class="g">"Write code that actually works"</span>
+            <span class="why">get the one solution that passed every test — not a plausible guess you have to verify yourself</span>
           </button>
           <button class="preset" type="button" data-goal="Ship a signed release with a rollback path">
-            <span class="c">&gt;</span> <span class="g">Do something risky, safely</span>
-            <span class="why">it works on its own, then waits for YOUR approval on the step that can't be undone</span>
+            <span class="c">&gt;</span> <span class="g">"Handle this, but check with me first"</span>
+            <span class="why">it does the work unattended and only interrupts you for the one decision that matters</span>
           </button>
           <button class="preset" type="button" data-goal="Write a data migration that can be safely reverted">
-            <span class="c">&gt;</span> <span class="g">Catch the gap before it bites</span>
-            <span class="why">it says what "done" actually requires — and flags what's still missing</span>
+            <span class="c">&gt;</span> <span class="g">"Tell me if this is actually safe"</span>
+            <span class="why">get a straight answer on what's covered and what's missing — before it burns you</span>
           </button>
         </div>
 
@@ -181,14 +186,17 @@
       </div>
     </div>
 
-    <div class="after">
-      <div class="lbl">the five tools it composes — each a separate live site</div>
-      <a href="https://backwards.coey.dev">backwards &middot; turns a goal into concrete checks, flags what's missing</a>
-      <a href="https://manyface.coey.dev">manyface &middot; races answers, a critic breaks the weak ones</a>
-      <a href="https://temper.coey.dev">temper &middot; saves a proven answer as a reusable tool</a>
-      <a href="https://deja.coey.dev">deja &middot; remembers what it learned for next time</a>
-      <a href="https://airdesk.coey.dev">airdesk &middot; waits for your approval on the irreversible step</a>
-    </div>
+    <details class="after howblock">
+      <summary>How does it know the answer is good? &rsaquo;</summary>
+      <div class="afterinner">
+        <p class="howlede">Your request passes through five checks before you ever see it. Each is a separate live service you can open and try on its own.</p>
+        <a href="https://backwards.coey.dev">1 &middot; it works out what "done" really means, and flags what's missing</a>
+        <a href="https://manyface.coey.dev">2 &middot; several answers compete; the wrong ones get broken and dropped</a>
+        <a href="https://temper.coey.dev">3 &middot; the answer that survives is saved, so it's faster next time</a>
+        <a href="https://deja.coey.dev">4 &middot; it remembers what it learned for your next request</a>
+        <a href="https://airdesk.coey.dev">5 &middot; it stops and asks you before anything that can't be undone</a>
+      </div>
+    </details>
 
     <footer>
       <p>Every run hits five separately-deployed Cloudflare Workers in real time — LoopUp calls their live APIs, it does not copy their code. ~10 seconds per run. The demo signer is labeled non-production.</p>
