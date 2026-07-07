@@ -182,28 +182,73 @@
     .run-id { font-family: 'IBM Plex Mono', monospace; font-size: .75rem; color: var(--muted); margin-bottom: .5rem; }
     .replay-link { font-size: .85rem; margin-top: .75rem; }
     .replay-link a { color: var(--blue-light); }
+    .section-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 1.75rem 0 .75rem; font-weight: 600; }
+    .examples { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1.5rem; }
+    @media (max-width: 560px) { .examples { grid-template-columns: 1fr; } }
+    .example { text-align: left; background: var(--layer); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; cursor: pointer; transition: border-color .15s, transform .1s; }
+    .example:hover { border-color: var(--orange); transform: translateY(-1px); }
+    .example.selected { border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange) inset; }
+    .ex-title { font-weight: 700; font-size: .95rem; margin-bottom: .25rem; color: var(--text); }
+    .ex-sub { font-size: .82rem; color: var(--muted); line-height: 1.5; }
+    .outcome-hint { font-size: .9rem; color: var(--amber); margin-bottom: .35rem; min-height: 1.2em; }
+    .how { margin: 1.5rem 0; border: 1px solid var(--border); border-radius: var(--radius-md); padding: .5rem .9rem; }
+    .how summary { cursor: pointer; font-size: .85rem; color: var(--muted); }
+    .how summary:hover { color: var(--text); }
+    .how .services { margin-top: 1rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="eyebrow">loopup v0.0.1</div>
-    <h1>Runs your goal through <span>five live tools</span></h1>
-    <p>Type one goal. LoopUp runs it through five small tools that were each built and deployed separately. Each tool does its part, then loopup re-checks every step by asking each tool to confirm its own result. At the end you get one honest summary: what each tool did, whether it all checks out, and a brand-new reusable tool that was created from the whole run.</p>
+    <h1>Give an AI a goal. <span>Watch it prove the work.</span></h1>
+    <p>You state what you want. LoopUp figures out what "done" really means, races several attempts, keeps the one that survives real tests, remembers what it learned, and stops for your approval before anything irreversible. You get an answer you can actually trust — and a receipt anyone can re-check.</p>
 
-    <div class="services">
-      <div class="service"><span class="num">01</span><div><div class="name">backwards</div><div class="desc">Set a goal, see what "done" means</div></div></div>
-      <div class="service"><span class="num">02</span><div><div class="name">manyface</div><div class="desc">Many answers, only the tested one wins</div></div></div>
-      <div class="service"><span class="num">03</span><div><div class="name">temper</div><div class="desc">Save a solution so it's reused</div></div></div>
-      <div class="service"><span class="num">04</span><div><div class="name">deja-shared</div><div class="desc">Private memory for your AI</div></div></div>
-      <div class="service"><span class="num">05</span><div><div class="name">airdesk</div><div class="desc">Approve the big step with your phone</div></div></div>
+    <h2 class="section-label">Pick something to try</h2>
+    <div class="examples" id="examples">
+      <button class="example" type="button"
+        data-goal="Sort a list of customer records by signup date, newest first"
+        data-outcome="Watch four different approaches compete. The one that passes every test wins — the confident-but-wrong ones get thrown out in front of you.">
+        <div class="ex-title">Solve a coding problem the right way</div>
+        <div class="ex-sub">Several AIs try it, a critic attacks each, only the tested answer survives.</div>
+      </button>
+      <button class="example" type="button"
+        data-goal="Ship a signed release with a rollback path"
+        data-outcome="LoopUp checks the plan, then pauses at the one irreversible step and asks YOU to approve shipping it — nothing goes out without your say-so.">
+        <div class="ex-title">Do something risky, safely</div>
+        <div class="ex-sub">The AI works on its own, then waits for your approval on the step that can't be undone.</div>
+      </button>
+      <button class="example" type="button"
+        data-goal="Write a data migration that can be safely reverted"
+        data-outcome="backwards turns your goal into concrete checks and honestly flags what's NOT covered yet — like a missing rollback — before any code is trusted.">
+        <div class="ex-title">Find the gap before it bites you</div>
+        <div class="ex-sub">It tells you what "done" actually requires — and what's still missing.</div>
+      </button>
+      <button class="example" type="button"
+        data-goal="Validate and parse a messy CSV upload without crashing"
+        data-outcome="When the winning solution is proven, it's saved as a reusable tool. Run a similar goal later and LoopUp reuses it instead of starting over.">
+        <div class="ex-title">Build once, reuse forever</div>
+        <div class="ex-sub">A proven solution becomes a tool the next run can just pick up.</div>
+      </button>
     </div>
 
     <div class="runner">
-      <input id="goalInput" type="text" value="Ship a signed release with a rollback path"
-        placeholder="Type your goal here…" autocomplete="off" />
-      <button id="runBtn" class="btn" type="button">Run the stack live</button>
+      <input id="goalInput" type="text" value="Sort a list of customer records by signup date, newest first"
+        placeholder="…or type your own goal" autocomplete="off" />
+      <button id="runBtn" class="btn" type="button">Run it live</button>
     </div>
-    <p id="hint" class="hint">Each of the five tools is a separate live site. LoopUp calls them in order and double-checks every step.</p>
+    <p id="outcomeHint" class="outcome-hint">Several AIs try it, a critic attacks each, only the tested answer survives.</p>
+    <p id="hint" class="hint">This isn't a canned demo. Every run hits five separate live services in real time and takes about 10 seconds.</p>
+
+    <details class="how">
+      <summary>How it works under the hood</summary>
+      <div class="services">
+        <div class="service"><span class="num">01</span><div><div class="name">backwards</div><div class="desc">Turns your goal into concrete checks — and flags what's missing</div></div></div>
+        <div class="service"><span class="num">02</span><div><div class="name">manyface</div><div class="desc">Races several answers; a critic breaks the weak ones</div></div></div>
+        <div class="service"><span class="num">03</span><div><div class="name">temper</div><div class="desc">Saves the winning answer as a reusable tool</div></div></div>
+        <div class="service"><span class="num">04</span><div><div class="name">deja-shared</div><div class="desc">Remembers what it learned for next time</div></div></div>
+        <div class="service"><span class="num">05</span><div><div class="name">airdesk</div><div class="desc">Waits for your approval on the irreversible step</div></div></div>
+      </div>
+    </details>
 
     <div id="out" class="out" hidden>
       <div id="runIdDisplay" class="run-id"></div>
@@ -513,6 +558,25 @@
     denyBtn.addEventListener('click', denyRun);
     btn.addEventListener('click', createRun);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') createRun(); });
+
+    // Example scenarios: prefill the goal + show what the visitor will see.
+    var outcomeHint = document.getElementById('outcomeHint');
+    var examples = [].slice.call(document.querySelectorAll('.example'));
+    function selectExample(el) {
+      examples.forEach(function (e) { e.classList.remove('selected'); });
+      el.classList.add('selected');
+      input.value = el.getAttribute('data-goal');
+      if (outcomeHint) outcomeHint.textContent = el.getAttribute('data-outcome');
+    }
+    examples.forEach(function (el) {
+      el.addEventListener('click', function () { selectExample(el); });
+    });
+    // Preselect the first example so the outcome line matches the prefilled goal.
+    if (examples.length) examples[0].classList.add('selected');
+    // If the user edits the goal by hand, clear the example selection + outcome.
+    input.addEventListener('input', function () {
+      examples.forEach(function (e) { e.classList.remove('selected'); });
+    });
   </script>
 </body>
 </html>
