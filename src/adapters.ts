@@ -4,7 +4,7 @@ import { contentHash } from './hash';
 const BACKWARDS = 'https://backwards.coey.dev';
 const MANYFACE = 'https://manyface.coey.dev';
 const TEMPER = 'https://temper.coey.dev';
-const DEJA_SHARED = 'https://deja-shared.coy.workers.dev';
+const DEJA_SHARED = 'https://deja-shared.coey.dev';
 const AIRDESK = 'https://airdesk.coey.dev';
 
 const AIRDESK_POLL_INTERVAL = 500;

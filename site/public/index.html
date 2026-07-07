@@ -112,6 +112,31 @@
     .links a { color: var(--blue-light); text-decoration: none; font-size: .875rem; }
     .links a:hover { text-decoration: underline; }
     footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+    .runner { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .5rem; }
+    #northStar { flex: 1; min-width: 260px; background: var(--layer); border: 1px solid var(--border); border-radius: var(--radius-md); padding: .6rem .9rem; color: var(--text); font-family: 'Inter', sans-serif; font-size: .95rem; }
+    #northStar:focus { outline: none; border-color: var(--orange); }
+    .btn { border: none; cursor: pointer; }
+    .btn[disabled] { opacity: .5; cursor: progress; }
+    .hint { font-size: .8rem; margin-bottom: 1.5rem; }
+    .out { margin-bottom: 1.5rem; }
+    .leglist { display: grid; gap: .4rem; margin-bottom: 1rem; }
+    .leg { display: flex; align-items: center; gap: .6rem; background: var(--layer); border: 1px solid var(--border); border-radius: var(--radius-md); padding: .55rem .9rem; font-size: .875rem; }
+    .leg .st { font-family: 'IBM Plex Mono', monospace; min-width: 1.2rem; text-align: center; }
+    .leg.ok .st { color: var(--green); }
+    .leg.bad .st { color: var(--red); }
+    .leg.pending .st { color: var(--amber); }
+    .leg .svc { font-weight: 600; min-width: 6.5rem; }
+    .leg .h { font-family: 'IBM Plex Mono', monospace; color: var(--muted); font-size: .8rem; margin-left: auto; }
+    .root { font-family: 'IBM Plex Mono', monospace; font-size: .9rem; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--layer-2); }
+    .root.pass { border-color: var(--green); }
+    .root.fail { border-color: var(--red); }
+    .root .k { color: var(--muted); }
+    .root .v { color: var(--amber); }
+    .root .badge { font-weight: 700; }
+    .root.pass .badge { color: var(--green); }
+    .root.fail .badge { color: var(--red); }
+    .raw { background: var(--layer); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; font-size: .75rem; color: var(--muted); overflow-x: auto; margin-top: .75rem; max-height: 340px; }
+    .linkbtn { background: none; border: none; color: var(--blue-light); cursor: pointer; font-size: .8rem; padding: .5rem 0; }
   </style>
 </head>
 <body>
@@ -128,12 +153,19 @@
       <div class="service"><span class="num">05</span><div><div class="name">airdesk</div><div class="desc">task + dev-sign + frontier</div></div></div>
     </div>
 
-    <div class="code">
-      <span class="prompt">$</span> bun run demo<br/>
-      <span class="comment">// Composite receipt written to proof/loopup-receipt.json</span>
+    <div class="runner">
+      <input id="northStar" type="text" value="Ship a signed release with a rollback path"
+        placeholder="State one north star…" autocomplete="off" />
+      <button id="runBtn" class="btn" type="button">Run the stack live →</button>
     </div>
+    <p id="hint" class="hint">Hits five independently deployed Cloudflare Workers in real time, then re-verifies every receipt hash.</p>
 
-    <a class="btn" href="https://github.com/jcoeyman/loopup">View on GitHub</a>
+    <div id="out" class="out" hidden>
+      <div id="legs" class="leglist"></div>
+      <div id="root" class="root"></div>
+      <button id="rawToggle" class="linkbtn" type="button" hidden>show raw receipt</button>
+      <pre id="raw" class="raw" hidden></pre>
+    </div>
 
     <div class="links">
       <a href="https://backwards.coey.dev">backwards</a>
@@ -146,5 +178,87 @@
       <p>Fetch composition only — no copied implementation code. airdesk dev-sign is a labeled non-production signer.</p>
     </footer>
   </div>
+
+  <script>
+    const SVCS = ['backwards', 'manyface', 'temper', 'deja-shared', 'airdesk'];
+    const btn = document.getElementById('runBtn');
+    const input = document.getElementById('northStar');
+    const out = document.getElementById('out');
+    const legsEl = document.getElementById('legs');
+    const rootEl = document.getElementById('root');
+    const rawEl = document.getElementById('raw');
+    const rawToggle = document.getElementById('rawToggle');
+
+    function renderPending() {
+      legsEl.innerHTML = SVCS.map(function (s) {
+        return '<div class="leg pending" data-svc="' + s + '"><span class="st">\u2026</span><span class="svc">' + s + '</span><span class="h">running</span></div>';
+      }).join('');
+      rootEl.className = 'root';
+      rootEl.innerHTML = '<span class="k">composing five live services\u2026</span>';
+    }
+
+    function renderResult(data) {
+      const receipt = data.receipt || {};
+      const verification = data.verification || {};
+      const legs = receipt.legs || [];
+      const checks = verification.legChecks || [];
+      legsEl.innerHTML = SVCS.map(function (s) {
+        const leg = legs.find(function (l) { return l.service === s; }) || {};
+        const chk = checks.find(function (c) { return c.service === s; }) || {};
+        const ok = !!leg.ok;
+        const cls = ok ? 'ok' : 'bad';
+        const mark = ok ? '\u2713' : '\u2717';
+        const hash = leg.hash ? leg.hash : (leg.error ? String(leg.error).slice(0, 40) : '');
+        const vmark = chk.verified ? ' \u00b7 re-verified' : '';
+        return '<div class="leg ' + cls + '"><span class="st">' + mark + '</span><span class="svc">' + s + '</span><span class="h">' + hash + vmark + '</span></div>';
+      }).join('');
+
+      const pass = verification.verified === true;
+      rootEl.className = 'root ' + (pass ? 'pass' : 'fail');
+      const root = verification.evidenceRoot || '(none)';
+      const hammer = receipt.hammerId ? receipt.hammerId : (receipt.hammerError || 'not minted');
+      rootEl.innerHTML =
+        '<div><span class="k">evidence root:</span> <span class="v">' + root + '</span></div>' +
+        '<div><span class="k">independent verification:</span> <span class="badge">' + (pass ? 'VERIFIED' : 'UNPROVEN') + '</span></div>' +
+        '<div><span class="k">minted hammer:</span> <span class="v">' + hammer + '</span>' + (receipt.hammerVerified ? ' \u00b7 verified' : '') + '</div>';
+
+      rawEl.textContent = JSON.stringify(data, null, 2);
+      rawToggle.hidden = false;
+    }
+
+    rawToggle.addEventListener('click', function () {
+      rawEl.hidden = !rawEl.hidden;
+      rawToggle.textContent = rawEl.hidden ? 'show raw receipt' : 'hide raw receipt';
+    });
+
+    async function run() {
+      const northStar = input.value.trim();
+      if (!northStar) return;
+      btn.disabled = true;
+      btn.textContent = 'Composing\u2026';
+      out.hidden = false;
+      rawEl.hidden = true;
+      rawToggle.hidden = true;
+      renderPending();
+      try {
+        const res = await fetch('/api/compose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ northStar }),
+        });
+        const data = await res.json();
+        renderResult(data);
+      } catch (e) {
+        rootEl.className = 'root fail';
+        rootEl.innerHTML = '<span class="badge">error</span> ' + String(e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run the stack live \u2192';
+      }
+    }
+
+    btn.addEventListener('click', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+  </script>
 </body>
 </html>

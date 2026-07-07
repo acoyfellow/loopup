@@ -1,0 +1,35 @@
+{
+  "schema": "guardrail.deploy-receipt.v0",
+  "timestamp": "2026-07-07T10:40:45.440Z",
+  "command": [
+    "wrangler",
+    "deploy",
+    "--dry-run"
+  ],
+  "configPath": "/Users/jcoeyman/cloudflare/loopup/wrangler.toml",
+  "git": {
+    "sha": "1277f14c87d335431f1c97bc2549ddbfc49c6ba4",
+    "dirty": true
+  },
+  "decision": {
+    "allowed": true,
+    "findings": []
+  },
+  "exposure": {
+    "isPublic": true,
+    "surface": "workers.dev URL + custom route loopup.coey.dev",
+    "reason": "workers_dev = true and 1 custom route(s)",
+    "criticalMessage": "Worker will have a public workers.dev URL AND custom routes with sensitive bindings",
+    "routes": [
+      "loopup.coey.dev"
+    ],
+    "workersDev": true
+  },
+  "bindings": [],
+  "auth": {
+    "detected": false,
+    "partial": false,
+    "patterns": [],
+    "source": "/Users/jcoeyman/cloudflare/loopup/src/worker.ts"
+  }
+}

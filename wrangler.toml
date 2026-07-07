@@ -1,9 +1,15 @@
 name = "loopup"
 main = "src/worker.ts"
 compatibility_date = "2026-07-07"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+account_id = "bfcb6ac5b3ceaf42a09607f6f7925823"
 
-[env.production]
-name = "loopup"
+[assets]
+directory = "./site/public"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"
 
-[site]
-bucket = "./site/public"
+[[routes]]
+pattern = "loopup.coey.dev"
+custom_domain = true
