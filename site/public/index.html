@@ -124,6 +124,12 @@
     .after .lbl { font-size: .7rem; color: var(--dim); text-transform: uppercase; letter-spacing: .1em; margin: .8rem 0 .2rem; }
     footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--border); font-size: .74rem; color: var(--dim); }
     footer a { color: var(--blue); text-decoration: none; }
+    .toolcard { margin: .8rem 0; border: 1px solid var(--green); border-radius: var(--radius); padding: .9rem 1rem; background: rgba(99,213,162,.06); }
+    .tc-tag { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--green); margin-bottom: .35rem; }
+    .tc-name { font-family: 'Inter', system-ui, sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: .3rem; }
+    .tc-sub { font-size: .8rem; color: var(--muted); margin-bottom: .7rem; line-height: 1.5; }
+    .tc-run { font-family: var(--mono); font-size: .78rem; border: 1px solid var(--green); background: rgba(99,213,162,.12); color: var(--green); padding: .4rem .8rem; border-radius: var(--radius); cursor: pointer; }
+    .tc-run:hover { background: rgba(99,213,162,.22); }
     .raw { margin-top: .6rem; background: #070b10; border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem; font-size: .7rem; color: var(--dim); max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
     .rawtoggle { background: none; border: none; color: var(--blue); font-family: var(--mono); font-size: .74rem; cursor: pointer; padding: .5rem 0; }
   </style>
@@ -202,7 +208,7 @@
     </details>
 
     <footer>
-      <p>Every run hits five separately-deployed Cloudflare Workers in real time — LoopUp calls their live APIs, it does not copy their code. ~10 seconds per run. The demo signer is labeled non-production.</p>
+      <p>Real work, not a canned demo — every run happens live in about 10 seconds, and the demo signer is labeled non-production.</p>
       <p style="margin-top:.5rem;"><a href="/architecture">Read the technical architecture &rarr;</a></p>
     </footer>
   </div>
@@ -311,34 +317,29 @@
       if (run.status === 'completed' && !seen['_done']) {
         seen['_done'] = 1;
         log('l-sys', '');
-        // ANSWER panel — the plain-language outcome first
+        // ANSWER first — the plain-language outcome
         if (run.resultSummary) {
           log('l-ok', run.resultSummary.plainSentence);
           log('l-sys', '');
-          log('l-dim', '  proof: ' + run.resultSummary.backwards.checksCount + ' check(s) passed, ' + run.resultSummary.manyface.failedAttempts + ' attempt(s) rejected, approved by you');
-          if (run.resultSummary.temper.reused) {
-            log('l-dim', '  tool: reused existing tool ' + run.resultSummary.temper.toolId);
-          } else if (run.hammerId) {
-            log('l-dim', '  tool: new tool minted ' + run.hammerId);
-          }
+          var rs = run.resultSummary;
+          var checks = (rs.backwards && rs.backwards.checksCount) || 0;
+          var rejected = (rs.manyface && rs.manyface.failedAttempts) || 0;
+          log('l-dim', '  it passed all ' + checks + ' checks, threw out ' + rejected + ' weaker attempts, and you approved it');
         } else {
-          log('l-ok', 'run complete — result verified end to end');
+          log('l-ok', 'Done. The result was checked end to end and you approved it.');
         }
-        // details line — hammer ID and evidence root demoted to small detail
+        // TOOL CARD — make the reusable tool real and runnable
+        renderToolCard(run);
+        // details line — technical ids demoted, no jargon
         var detailParts = [];
-        if (run.evidenceRoot) detailParts.push('evidence: ' + run.evidenceRoot);
-        if (run.hammerId) detailParts.push('hammer: ' + run.hammerId);
+        if (run.evidenceRoot) detailParts.push('verified id ' + run.evidenceRoot);
         if (detailParts.length) {
-          log('l-sys', 'details  <span class="l-dim">' + detailParts.join(' &middot; ') + '</span>');
-        }
-        if (run.hammerError) {
-          log('l-dim', 'tool not minted: ' + esc(run.hammerError));
+          log('l-sys', '<span class="l-dim">' + detailParts.join(' &middot; ') + '</span>');
         }
         rawToggle.hidden = false;
         rawEl.textContent = JSON.stringify(run, null, 2);
-        // offer replay
         log('l-info', '');
-        log('l-info', '<a href="#" id="replayLink" style="color:var(--blue);text-decoration:none;">&#8635; replay — re-check every step from scratch</a>');
+        log('l-info', '<a href="#" id="replayLink" style="color:var(--blue);text-decoration:none;">&#8635; double-check it yourself — re-run every step from scratch</a>');
         var rl = document.getElementById('replayLink');
         if (rl) rl.addEventListener('click', function (e) { e.preventDefault(); replayRun(currentRunId); });
         finishBtn();
@@ -354,6 +355,28 @@
       } else if (run.status === 'running') {
         cursor();
       }
+    }
+
+    // Turn the goal into a friendly tool name (Title Case, no trailing punctuation).
+    function toolNameFromGoal(goal) {
+      var g = String(goal || 'your goal').replace(/[.\s]+$/, '');
+      return g.charAt(0).toUpperCase() + g.slice(1);
+    }
+
+    function renderToolCard(run) {
+      var rs = run.resultSummary || {};
+      var reused = rs.temper && rs.temper.reused;
+      var name = toolNameFromGoal(run.goal);
+      var card = document.createElement('div');
+      card.className = 'toolcard';
+      card.innerHTML =
+        '<div class="tc-tag">' + (reused ? 'reused a tool you already had' : 'new reusable tool saved') + '</div>' +
+        '<div class="tc-name">' + esc(name) + '</div>' +
+        '<div class="tc-sub">A proven, approved solution. Run it again any time — next time it starts from here instead of from scratch.</div>' +
+        '<button class="tc-run" type="button">&#8635; run this tool again</button>';
+      logEl.appendChild(card);
+      var rb = card.querySelector('.tc-run');
+      if (rb) rb.addEventListener('click', function () { input.value = run.goal; createRun(); });
     }
 
     function finishBtn() { btn.disabled = false; btn.textContent = 'run \u21B5'; }

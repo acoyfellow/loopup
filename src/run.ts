@@ -454,11 +454,17 @@ export class LoopupRun {
 
         let plainSentence: string;
         if (run.hammerId) {
-          plainSentence = `A verified approach to: "${run.goal}". It passed ${checksCount} check(s); ${failedAttempts} weaker attempt(s) were rejected; approved by you; saved as a reusable tool you can run again.`;
+          const attemptsWord = totalAttempts === 1 ? 'approach' : 'approaches';
+          const gap = disprovedCount === 1
+            ? ` One requirement isn't met yet, and I flagged it instead of hiding it.`
+            : disprovedCount > 1
+              ? ` ${disprovedCount} requirements aren't met yet, and I flagged them instead of hiding them.`
+              : '';
+          plainSentence = `Done. I worked out what "${run.goal}" needs, tried ${totalAttempts} ${attemptsWord}, and kept the one that passed every check. ${failedAttempts} weaker ${attemptsWord} got thrown out.${gap} You approved it, and I saved the working solution so you can run it again.`;
         } else if (run.hammerError) {
-          plainSentence = `The run completed but no tool was minted: ${run.hammerError}. The goal was "${run.goal}".`;
+          plainSentence = `Done, but I couldn't save this as a reusable tool (${run.hammerError}). The goal was "${run.goal}".`;
         } else {
-          plainSentence = `No answer text was produced; this goal only yields a verified plan for: "${run.goal}".`;
+          plainSentence = `Done. This goal produced a verified plan for "${run.goal}", not a runnable output.`;
         }
 
         run.resultSummary = {
