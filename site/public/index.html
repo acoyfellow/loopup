@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LoopUp — software that builds its own tools</title>
-  <meta name="description" content="Give the machine a goal. It proves the work across five live services and mints a new reusable tool from the result. Every run leaves the system more capable than before." />
+  <title>LoopUp — delegate work to AI without watching it</title>
+  <meta name="description" content="Give it a goal. It does the work, checks the work, and only asks you for the one decision that can't be undone. You get the result without watching over it." />
   <meta name="theme-color" content="#0b1118" />
   <link rel="canonical" href="https://loopmachine.coey.dev" />
-  <meta property="og:title" content="LoopUp — software that builds its own tools" />
-  <meta property="og:description" content="Give the machine a goal. It proves the work and mints a new tool from the result. Watch it run live." />
+  <meta property="og:title" content="LoopUp — delegate work to AI without watching it" />
+  <meta property="og:description" content="Give it a goal. It does the work, checks the work, and only asks you when it has to." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://loopmachine.coey.dev" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="LoopUp — software that builds its own tools" />
-  <meta name="twitter:description" content="Give the machine a goal. It proves the work and mints a new tool from the result." />
+  <meta name="twitter:title" content="LoopUp — delegate work to AI without watching it" />
+  <meta name="twitter:description" content="Give it a goal. It does the work, checks the work, and only asks you when it has to." />
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <style>
@@ -137,8 +137,8 @@
 <body>
   <div class="wrap">
     <div class="brand"><b>loopup</b> // AI work you don't have to double-check</div>
-    <h1>Ask for something.<br>Get back an answer you can <span class="hl">actually trust</span>.</h1>
-    <p class="thesis">A normal AI hands you one confident answer and hopes it's right. LoopUp hands you an answer that <b>already survived real tests</b> — the wrong tries thrown out, the missing pieces flagged, and a stop-and-ask before anything that can't be undone. You get the result <b>and the proof</b>, without babysitting it.</p>
+    <h1>Give it a goal. It does the work, checks the work, and <span class="hl">only asks you when it has to</span>.</h1>
+    <p class="thesis">LoopUp runs your goal through live checks — competing answers, failure tests, safety gates — then hands you the one that survived, with the proof. <b>You get the result without watching over it</b>, and it only interrupts you for the one decision that can't be undone.</p>
 
     <div class="compound">
       <span class="chip">you ask</span>
@@ -277,7 +277,7 @@
           var extra = '';
           if (st.name === 'manyface' && st.data && st.data.verdicts) {
             var losers = st.data.verdicts.filter(function (v) { return !v.passed; }).length;
-            extra = ' <span class="l-dim">winner survived; ' + losers + ' attempt(s) failed the tests</span>';
+            extra = ' <span class="l-dim">winner survived; ' + losers + ' attempts failed the tests</span>';
           } else if (st.name === 'backwards' && st.data && st.data.status === 'failed') {
             extra = ' <span class="l-fail">(honestly flagged a missing check)</span>';
           } else if (st.name === 'temper' && st.data) {
